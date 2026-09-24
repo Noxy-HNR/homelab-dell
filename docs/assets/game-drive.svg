@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 980 240" role="img" aria-labelledby="title desc">
+  <title id="title">Exclusive Steam drive handoff</title><desc id="desc">The HP holds one game volume. Desktop and laptop take turns attaching it; only one arrow is active at a time.</desc>
+  <rect width="980" height="240" rx="22" fill="#f5f8fc"/>
+  <style>text{font-family:Arial,sans-serif;fill:#15243b}.box{fill:white;stroke:#24476b;stroke-width:3}.head{font-size:22px;font-weight:bold}.small{font-size:17px}.line{stroke:#dd913a;stroke-width:7;stroke-linecap:round}</style>
+  <rect class="box" x="25" y="75" width="225" height="105" rx="14"/><text class="head" x="52" y="116">Desktop</text><text class="small" x="52" y="148">Steam S: owner A</text>
+  <rect class="box" x="376" y="55" width="230" height="145" rx="14"/><text class="head" x="408" y="101">HP NAS</text><text class="small" x="408" y="133">256 GiB iSCSI LUN</text><text class="small" x="408" y="165">one ACL at a time</text>
+  <rect class="box" x="730" y="75" width="225" height="105" rx="14"/><text class="head" x="758" y="116">Laptop</text><text class="small" x="758" y="148">Steam S: owner B</text>
+  <path class="line" d="M252 126 H370"/><path class="line" d="M610 126 H724"/>
+  <text class="small" x="250" y="226">Close Steam → Release on current PC → Attach on other PC</text>
+</svg>

@@ -1,0 +1,15 @@
+services:
+  dell-mcp-demo:
+    build: .
+    image: homelab/dell-mcp-demo:local
+    init: true
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:8765:8765"
+    read_only: true
+    tmpfs:
+      - /tmp
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true

@@ -1,0 +1,19 @@
+# Local machine configuration and credentials
+**/game-client.json
+**/controller.json
+**/*.pem
+**/*.key
+**/*.pub
+**/id_ed25519*
+**/homelab_game_*
+**/.env
+**/local.env
+
+# Generated files and private inventories
+__pycache__/
+*.py[cod]
+*.zip
+inventory/reports/
+*.log
+.DS_Store
+Thumbs.db

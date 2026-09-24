@@ -1,0 +1,8 @@
+{
+  "schema_version": 1,
+  "target_iqn": "iqn.2026-09.local.homelab:steam-games",
+  "desktop_iqn": "REPLACE_WITH_DESKTOP_WINDOWS_INITIATOR_IQN",
+  "laptop_iqn": "REPLACE_WITH_LAPTOP_WINDOWS_INITIATOR_IQN",
+  "portal_ip": "REPLACE_WITH_HP_PORTAL_IPV4",
+  "backstore_name": "steam_games"
+}

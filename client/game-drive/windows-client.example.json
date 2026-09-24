@@ -1,0 +1,17 @@
+{
+  "HostName": "REPLACE_WITH_desktop_OR_laptop",
+  "TargetIqn": "iqn.2026-09.local.homelab:steam-games",
+  "PortalAddress": "REPLACE_WITH_HP_PORTAL_IPV4",
+  "PortalPort": 3260,
+  "InitiatorAddress": "REPLACE_WITH_THIS_PC_LAN_IPV4",
+  "MinimumLinkSpeedGbps": 10,
+  "ExpectedDiskUniqueId": "REPLACE_AFTER_PROBE",
+  "ExpectedSizeBytes": 0,
+  "ExpectedVolumeLabel": "SteamGames",
+  "DriveLetter": "S",
+  "ChapUsername": "",
+  "ControllerSshHost": "REPLACE_WITH_HP_MANAGEMENT_HOST",
+  "ControllerSshUser": "gamehandoff-REPLACE_WITH_desktop_OR_laptop",
+  "ControllerSshIdentityFile": "REPLACE_WITH_FULL_PATH_TO_PRIVATE_KEY",
+  "ControllerScriptPath": "/usr/local/sbin/game-lun-controller.py"
+}

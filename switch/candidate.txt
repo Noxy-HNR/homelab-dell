@@ -1,0 +1,77 @@
+! Cisco WS-C3850-24XS candidate commands for the <$300 setup.
+! Read-only checks first. Identify the real switch member, free SFP+ ports,
+! current LAN access VLAN, router uplink, and management before editing.
+enable
+show version
+show inventory
+show interfaces status
+show etherchannel summary
+show etherchannel load-balance
+show vlan brief
+show running-config interface TenGigabitEthernet1/0/1
+show running-config interface TenGigabitEthernet1/0/2
+show running-config interface TenGigabitEthernet1/0/3
+show running-config interface TenGigabitEthernet1/0/4
+show running-config interface TenGigabitEthernet1/0/5
+show running-config interface TenGigabitEthernet1/0/6
+show running-config interface TenGigabitEthernet1/0/7
+show running-config interface Port-channel10
+!
+! Only if the selected ports really are unused HOST ports and LAN_VLAN is known,
+! replace LAN_VLAN, port numbers and port-channel 10 below. Do not paste the
+! placeholders verbatim. Configure Dell from both local consoles; its current
+! SSH connection may disconnect while the four NICs move into one LACP bond.
+configure terminal
+interface TenGigabitEthernet1/0/1
+ description HP-DL360P-GAME-NAS-10G
+ switchport mode access
+ switchport access vlan LAN_VLAN
+ spanning-tree portfast
+ no shutdown
+exit
+interface TenGigabitEthernet1/0/2
+ description DESKTOP-CAT6A-10G
+ switchport mode access
+ switchport access vlan LAN_VLAN
+ spanning-tree portfast
+ no shutdown
+exit
+! Add this third interface after the owned 10GBASE-T SFP+ module and
+! laptop USB4/Thunderbolt RJ45 adapter negotiate a 10 GbE link.
+interface TenGigabitEthernet1/0/3
+ description LAPTOP-CAT6A-10G
+ switchport mode access
+ switchport access vlan LAN_VLAN
+ spanning-tree portfast
+ no shutdown
+exit
+! Example Dell ports 4-7 all have supported 1 GbE RJ45 SFP modules. Confirm
+! they are unused and belong to the same switch/stack. No Dell SFP+ NIC.
+interface range TenGigabitEthernet1/0/4 - 7
+ description DELL-R710-ONBOARD-1G-LACP
+ switchport mode access
+ switchport access vlan LAN_VLAN
+ channel-group 10 mode active
+ no shutdown
+exit
+interface Port-channel10
+ description DELL-R710-4X1G-COPPER
+ switchport mode access
+ switchport access vlan LAN_VLAN
+ spanning-tree portfast
+ no shutdown
+exit
+end
+show interfaces status
+show etherchannel summary
+show lacp neighbor
+show etherchannel load-balance
+show interfaces TenGigabitEthernet1/0/1
+show interfaces TenGigabitEthernet1/0/2
+show interfaces TenGigabitEthernet1/0/3
+show interfaces TenGigabitEthernet1/0/4
+show interfaces TenGigabitEthernet1/0/5
+show interfaces TenGigabitEthernet1/0/6
+show interfaces TenGigabitEthernet1/0/7
+! Save only after endpoints AND original uplink/management still work:
+copy running-config startup-config

@@ -1,0 +1,20 @@
+[Unit]
+Description=Homelab read-only landing page
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+EnvironmentFile=/etc/homelab-dashboard.conf
+ExecStart=/usr/bin/python3 /opt/homelab/dashboard/dashboard.py
+Restart=on-failure
+RestartSec=5
+DynamicUser=yes
+NoNewPrivileges=yes
+ProtectSystem=strict
+ProtectHome=yes
+PrivateTmp=yes
+RestrictAddressFamilies=AF_INET AF_INET6 AF_UNIX
+
+[Install]
+WantedBy=multi-user.target

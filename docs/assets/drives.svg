@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1120 500" role="img" aria-labelledby="title desc">
+  <title id="title">Initial server drive layout</title>
+  <desc id="desc">HP has one 512 GB SSD and four 300 GB hard drives, leaving three bays empty. Dell has two 300 GB 2.5 inch hard drives mounted in 3.5 inch adapter trays.</desc>
+  <rect width="1120" height="500" rx="22" fill="#f5f8fc"/>
+  <style>text{font-family:Arial,sans-serif;fill:#15243b}.head{font-size:25px;font-weight:bold}.sub{font-size:18px}.disk{stroke:#24476b;stroke-width:2}.label{font-size:17px;font-weight:bold}</style>
+  <text x="30" y="48" class="head">HP DL360p Gen8 · eight 2.5-inch bays</text>
+  <g transform="translate(30 80)">
+    <rect x="0" y="0" width="126" height="110" rx="10" fill="#78d9c0" class="disk"/><text x="28" y="43" class="label">SSD</text><text x="16" y="75" class="sub">512 GB</text>
+    <rect x="138" y="0" width="126" height="110" rx="10" fill="#9dc0ef" class="disk"/><text x="21" y="43" class="label">HDD 1</text><text x="16" y="75" class="sub">300 GB</text>
+    <rect x="276" y="0" width="126" height="110" rx="10" fill="#9dc0ef" class="disk"/><text x="21" y="43" class="label">HDD 2</text><text x="16" y="75" class="sub">300 GB</text>
+    <rect x="414" y="0" width="126" height="110" rx="10" fill="#9dc0ef" class="disk"/><text x="21" y="43" class="label">HDD 3</text><text x="16" y="75" class="sub">300 GB</text>
+    <rect x="552" y="0" width="126" height="110" rx="10" fill="#9dc0ef" class="disk"/><text x="21" y="43" class="label">HDD 4</text><text x="16" y="75" class="sub">300 GB</text>
+    <rect x="690" y="0" width="126" height="110" rx="10" fill="#fff" class="disk"/><text x="30" y="60" class="sub">empty</text>
+    <rect x="828" y="0" width="126" height="110" rx="10" fill="#fff" class="disk"/><text x="30" y="60" class="sub">empty</text>
+    <rect x="966" y="0" width="126" height="110" rx="10" fill="#fff" class="disk"/><text x="30" y="60" class="sub">empty</text>
+  </g>
+  <text x="30" y="225" class="sub">SSD: one logical drive → Ubuntu / and /srv/homelab (Steam image)</text>
+  <text x="30" y="256" class="sub">Four HDDs: separate RAID0 logical drive → /srv/bulk (Models, Projects, Backups)</text>
+  <text x="30" y="315" class="head">Dell R710 · 3.5-inch bays</text>
+  <rect x="30" y="340" width="230" height="105" rx="10" fill="#9dc0ef" class="disk"/><text x="47" y="380" class="label">300 GB HDD</text><text x="47" y="411" class="sub">2.5″ in 3.5″ adapter</text>
+  <rect x="275" y="340" width="230" height="105" rx="10" fill="#9dc0ef" class="disk"/><text x="292" y="380" class="label">300 GB HDD</text><text x="292" y="411" class="sub">2.5″ in 3.5″ adapter</text>
+  <text x="530" y="380" class="sub">One PERC RAID0 virtual disk → Ubuntu, Docker, code</text>
+  <text x="530" y="413" class="sub">Verify disk serial numbers before creating arrays.</text>
+  <text x="30" y="480" class="sub">RAID0 has no redundancy. Creating these arrays erases selected disks.</text>
+</svg>

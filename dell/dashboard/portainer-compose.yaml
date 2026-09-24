@@ -1,0 +1,12 @@
+services:
+  portainer:
+    image: portainer/portainer-ce:lts
+    restart: unless-stopped
+    ports:
+      - "${PORTAINER_BIND_IP}:9443:9443"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - portainer_data:/data
+
+volumes:
+  portainer_data:
