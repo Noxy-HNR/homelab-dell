@@ -12,6 +12,10 @@ Follow this page from top to bottom. The pictures show the **planned** cabling a
 - Buy a Windows-compatible **USB4/Thunderbolt 10GBASE-T RJ45 adapter** for the laptop. Keep the two existing Cisco copper 10G SFP+ modules, four 1G copper SFP modules for Dell, short HP fiber/optics, and four Dell Cat5e patch cables.
 - Keep the complete delivered cart **under $300**. The [parts and budget](../docs/PARTS.md) show the current target. Do not buy CPU, RAM, another Dell NIC, a 40G module, or Pi hardware for this first deployment.
 
+This is your photographed ImageStream card. It has **six SFP cages**, and its `PCIE-ETH-GIGX6` label does not establish 10 Gb/s operation. Keep it aside until a live PCI ID and link test establish its actual capabilities.
+
+![Your six-port ImageStream PCIE-ETH-GIGX6 card](assets/imagestream-card.jpg)
+
 ## 2. Make the Ubuntu installer USB
 
 On an existing Windows PC, download these **two files manually**:
