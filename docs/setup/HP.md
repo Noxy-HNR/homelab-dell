@@ -63,7 +63,7 @@ The token line scrolls up as the last checks run. If you missed it, get it again
 sudo bash hp/deploy.sh verify HP_IP DELL_IP
 ```
 
-**You should see:** `PASS: HP NAS, 10G link and dashboard`.
+**You should see:** `PASS: HP NAS, 10G link and Homelab app`.
 
 ### 4. Get your login token
 

@@ -14,8 +14,6 @@ Actions (run in order after installing Ubuntu Server):
   install-base
   install-docker
   install-dev
-  install-mcp-demo
-  verify-mcp-demo
 EOF
 }
 
@@ -106,51 +104,6 @@ install_dev() {
   echo 'Development tools installed. Clone projects into the intended user home directory.'
 }
 
-mcp_demo_dir='/opt/homelab/mcp/dell-demo'
-
-install_mcp_demo() {
-  require_root
-  command -v docker >/dev/null 2>&1 || { echo 'Install Docker first.' >&2; exit 2; }
-  docker compose version >/dev/null
-  local source_dir
-  source_dir="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)/mcp-host"
-  [[ -d "$source_dir" ]] || { echo 'Copy the whole setup directory to this server.' >&2; exit 2; }
-  install -d -m 0755 "$mcp_demo_dir"
-  local name
-  for name in Dockerfile compose.yaml server.py smoke_client.py; do
-    [[ -f "$source_dir/$name" ]] || { echo "Missing $source_dir/$name" >&2; exit 2; }
-    if [[ -e "$mcp_demo_dir/$name" ]]; then
-      cmp -s "$source_dir/$name" "$mcp_demo_dir/$name" || {
-        echo "Existing $mcp_demo_dir/$name differs; review it before an update." >&2
-        exit 2
-      }
-    else
-      install -m 0644 "$source_dir/$name" "$mcp_demo_dir/$name"
-    fi
-  done
-  (cd "$mcp_demo_dir" && docker compose config --quiet && docker compose up -d --build)
-  echo "MCP demo installed at $mcp_demo_dir"
-  echo 'Run verify-mcp-demo, then connect the laptop through the SSH tunnel in mcp-host/README.md.'
-}
-
-verify_mcp_demo() {
-  require_root
-  [[ -f "$mcp_demo_dir/compose.yaml" ]] || { echo 'MCP demo not installed.' >&2; exit 2; }
-  (cd "$mcp_demo_dir" && docker compose ps)
-  local attempt output
-  for attempt in {1..30}; do
-    if output=$(cd "$mcp_demo_dir" && docker compose exec -T dell-mcp-demo python smoke_client.py 2>&1); then
-      printf '%s\n' "$output"
-      return 0
-    fi
-    sleep 1
-  done
-  printf '%s\n' "$output" >&2
-  (cd "$mcp_demo_dir" && docker compose logs --tail=80) >&2
-  echo 'MCP demo did not answer the smoke test.' >&2
-  return 1
-}
-
 verify_all() {
   require_root
   local binary
@@ -203,7 +156,5 @@ case "$action" in
   install-base) install_base ;;
   install-docker) install_docker ;;
   install-dev) install_dev ;;
-  install-mcp-demo) install_mcp_demo ;;
-  verify-mcp-demo) verify_mcp_demo ;;
   *) usage; exit 2 ;;
 esac
