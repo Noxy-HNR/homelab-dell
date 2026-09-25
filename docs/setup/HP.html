@@ -1,0 +1,130 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>HP setup · Homelab</title><link rel="stylesheet" href="../assets/guide.css"></head><body><aside><strong>Homelab</strong><p>Your setup guide.<br>One machine at a time.</p><a href="../guide.html">Start here</a><a href="../INSTALL.html">1 · Hardware & Ubuntu</a><a href="HP.html">2 · HP NAS</a><a href="DELL.html">3 · Dell workbench</a><a href="WINDOWS.html">4 · Windows PCs</a><a href="../GAME-DRIVE.html">5 · Steam drive</a><a href="../DAILY-USE.html">Use your homelab</a><a href="../PARTS.html">Parts to buy</a><a href="../VALIDATION.html">What is tested</a></aside><main><div class="topbar"><span>INSTALL · USE · RECOVER</span><button id="print">Print this page</button></div><h1 id="hp-setup">HP setup</h1>
+<p>The HP is your always-on storage server. This page installs its file shares, the Steam drive target, and the web app on port <strong>8088</strong>.</p>
+<p><strong>Before you start</strong> you must have finished Parts 1 and 2 of the <a href="../guide.html">start guide</a>:</p>
+<ul>
+<li>Ubuntu Server 24.04 is installed on the HP.</li>
+<li><code>/srv/homelab</code> and <code>/srv/bulk</code> are mounted (<code>findmnt /srv/homelab</code> and <code>findmnt /srv/bulk</code> each print a line).</li>
+<li>The HP's 10G address is set on its network card.</li>
+<li>This repo is cloned on the HP (<code>cd homelab-stack</code>).</li>
+</ul>
+<p>Below, <strong>HP_IP</strong> is the HP's 10G address. <strong>DELL_IP</strong> is the Dell's address. Use your real numbers, for example <code>192.168.1.10</code> and <code>192.168.1.20</code>.</p>
+<p><img alt="Initial HP and Dell drive layouts" src="../assets/drives.svg" /></p>
+<h2 id="steps">Steps</h2>
+<h3 id="1-look-before-you-install">1. Look before you install</h3>
+<pre><code class="language-bash">sudo bash hp/deploy.sh plan HP_IP DELL_IP
+</code></pre>
+<p>This changes nothing. It shows your storage and what the install will do. Check that the drive sizes match what you built.</p>
+<p><strong>You should see:</strong> a list of the planned changes and <code>PASS: HP &lt;name&gt; at 10 Gb/s (HP_IP)</code>, then <code>Plan complete.</code></p>
+<p>If it does not say <code>10 Gb/s</code>, stop. Check the network card, the optic, the fiber and the switch port.</p>
+<h3 id="2-install">2. Install</h3>
+<pre><code class="language-bash">sudo bash hp/deploy.sh install HP_IP DELL_IP
+</code></pre>
+<p>It takes several minutes. It will:</p>
+<ol>
+<li>Check the 10G link.</li>
+<li>Install the file sharing and the Steam drive target.</li>
+<li>Ask you to set the password for the <code>homelabshare</code> user. <strong>Type it twice.</strong> You will use it on Windows to open <code>\\HP_IP\Models</code>.</li>
+<li>Install Cockpit (system controls) and the HP web app.</li>
+<li>Run its own checks.</li>
+</ol>
+<p>The web app is installed with <code>services/install.sh</code>, which the script calls for you.</p>
+<p><strong>You should see, near the end:</strong></p>
+<pre><code class="language-text">{&quot;ok&quot;:true,&quot;role&quot;:&quot;hp&quot;}
+
+Open http://HP_IP:8088/
+Login token (save privately):
+&lt;a long string of letters and numbers&gt;
+
+The app is installed. Follow the guide to configure the Windows control app and a backup destination.
+</code></pre>
+<p>The token line scrolls up as the last checks run. If you missed it, get it again in step 4.</p>
+<h3 id="3-verify">3. Verify</h3>
+<pre><code class="language-bash">sudo bash hp/deploy.sh verify HP_IP DELL_IP
+</code></pre>
+<p><strong>You should see:</strong> <code>PASS: HP NAS, 10G link and dashboard</code>.</p>
+<h3 id="4-get-your-login-token">4. Get your login token</h3>
+<pre><code class="language-bash">sudo cat /etc/homelab/app-token
+</code></pre>
+<p>Copy it into a password manager or a private note. Do not paste it into chat, email or Git.</p>
+<h3 id="5-open-the-web-app">5. Open the web app</h3>
+<p>On any PC on the network, open <code>http://HP_IP:8088/</code>.</p>
+<p><strong>You should see:</strong> a page titled <strong>Sign in to this server</strong> with one box, <em>Server login token</em>. Paste the token and click <strong>Open workspace</strong>.</p>
+<p><strong>Then you should see:</strong> a menu on the left with <strong>Overview</strong>, <strong>Model library</strong> and <strong>Backups</strong>, and a badge that says <code>HP</code>. The overview shows CPU, memory, storage and network links. Each network card should show its link speed, for example <code>10 Gb/s</code> for the HP's 10G card.</p>
+<p>The login lasts eight hours. Click <strong>Sign out</strong> when you are done on a shared PC.</p>
+<h3 id="6-check-the-other-pages">6. Check the other pages</h3>
+<ul>
+<li><strong>Cockpit:</strong> <code>https://HP_IP:9090/</code>. Your browser will warn about the certificate. That is normal for a home server. Sign in with your Ubuntu user.</li>
+<li><strong>Model share:</strong> on the laptop, open <code>\\HP_IP\Models</code> in Explorer. Sign in as <code>homelabshare</code>.</li>
+</ul>
+<p>Leave the Steam drive for <a href="../guide.html#part-6-set-up-the-steam-drive-then-check-everything">Part 6</a>.</p>
+<h2 id="what-the-installer-did-and-did-not-do">What the installer did and did not do</h2>
+<ul>
+<li>It <strong>did</strong> create a <code>homelab</code> service account with no login shell, a login token at <code>/etc/homelab/app-token</code>, and a settings file at <code>/etc/homelab/apps.json</code>.</li>
+<li>It <strong>did</strong> start the app as a service named <code>homelab-app</code>. It restarts on failure and after a reboot.</li>
+<li>It <strong>did not</strong> create RAID arrays, partition or format any disk, or set any IP address.</li>
+<li>The old landing page service, <code>homelab-dashboard</code>, is turned off. The new app replaces it.</li>
+</ul>
+<h2 id="update-later">Update later</h2>
+<pre><code class="language-bash">cd ~/homelab-stack
+git pull --ff-only
+sudo bash services/install.sh hp HP_IP DELL_IP
+</code></pre>
+<p>Your token and settings are kept. The old app is copied to <code>/opt/homelab/apps/homelab.previous.&lt;date&gt;</code> first.</p>
+<h2 id="if-something-goes-wrong">If something goes wrong</h2>
+<table>
+<thead>
+<tr>
+<th>You see</th>
+<th>What it means</th>
+<th>What to do</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>HP address ... must belong to exactly one local interface</code></td>
+<td>The address you typed is not on this server, or is on two cards.</td>
+<td>Run <code>ip -4 address</code>. Use the address on the 10G card.</td>
+</tr>
+<tr>
+<td><code>NIC ... is not reporting a 10 Gb/s link</code></td>
+<td>The link is slower than 10G.</td>
+<td>Check the card, the optic, the fiber and the switch port.</td>
+</tr>
+<tr>
+<td><code>Finish HP storage and NAS setup first</code></td>
+<td><code>/srv/bulk</code> or <code>/srv/homelab</code> is not mounted.</td>
+<td>Fix the mounts in <a href="../INSTALL.html#4-install-ubuntu-on-both-servers">INSTALL.md step 4</a>.</td>
+</tr>
+<tr>
+<td><code>The Models share is missing</code></td>
+<td>The folder <code>/srv/bulk/models</code> does not exist.</td>
+<td>Run <code>sudo bash hp/deploy.sh install HP_IP DELL_IP</code> again. It creates the shares.</td>
+</tr>
+<tr>
+<td><code>Ubuntu 24.04 is required</code></td>
+<td>Wrong Ubuntu version.</td>
+<td>Install Ubuntu Server 24.04.</td>
+</tr>
+<tr>
+<td><code>... is not assigned to this server</code></td>
+<td>You typed an address the HP does not have.</td>
+<td>Check the address with <code>ip -4 address</code>.</td>
+</tr>
+<tr>
+<td><code>Existing apps.json differs at ...</code></td>
+<td>The saved settings use a different address or path.</td>
+<td>Read <code>/etc/homelab/apps.json</code>. Use the same addresses as before, or ask for help before you change it.</td>
+</tr>
+<tr>
+<td>The final health check fails</td>
+<td>The app did not start.</td>
+<td>The installer prints the last log lines. Also run <code>sudo journalctl -u homelab-app -n 60 --no-pager</code>.</td>
+</tr>
+<tr>
+<td>The page loads but the token is refused</td>
+<td>You used the Dell's token.</td>
+<td>Each server has its own. Run <code>sudo cat /etc/homelab/app-token</code> <strong>on the HP</strong>.</td>
+</tr>
+</tbody>
+</table>
+<p>Back to the <a href="../guide.html">start guide</a>.</p><footer>Built from the Markdown guide in Noxy-HNR/homelab-stack. Example screenshots use local test data; the physical server checks happen during setup.</footer></main><script src="../assets/guide.js"></script></body></html>

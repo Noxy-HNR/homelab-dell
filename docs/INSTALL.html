@@ -1,0 +1,134 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Set up the homelab, one machine at a time · Homelab</title><link rel="stylesheet" href="assets/guide.css"></head><body><aside><strong>Homelab</strong><p>Your setup guide.<br>One machine at a time.</p><a href="guide.html">Start here</a><a href="INSTALL.html">1 · Hardware & Ubuntu</a><a href="setup/HP.html">2 · HP NAS</a><a href="setup/DELL.html">3 · Dell workbench</a><a href="setup/WINDOWS.html">4 · Windows PCs</a><a href="GAME-DRIVE.html">5 · Steam drive</a><a href="DAILY-USE.html">Use your homelab</a><a href="PARTS.html">Parts to buy</a><a href="VALIDATION.html">What is tested</a></aside><main><div class="topbar"><span>INSTALL · USE · RECOVER</span><button id="print">Print this page</button></div><h1 id="set-up-the-homelab-one-machine-at-a-time">Set up the homelab, one machine at a time</h1>
+<p>Follow this page from top to bottom. The pictures show the <strong>planned</strong> cabling and drive placement. Replace example IPs and Cisco port numbers with the values you see on your own equipment. The scripts install software after the operating systems and disk arrays exist.</p>
+<p><img alt="Rack, switch, desktop and laptop cable map" src="assets/cabling-final.svg" /></p>
+<h2 id="1-get-the-parts-and-check-the-distances">1. Get the parts and check the distances</h2>
+<ul>
+<li>Measure <strong>two</strong> separate rack-to-room cable paths with slack. Buy two pure-copper Cat6A cables of the measured lengths. Both PCs need their own cable. The whole route must be within the <strong>10G reach of the copper SFP+ module at the Cisco end</strong>. Cisco's SFP-10G-T-X example is rated for <a href="https://www.cisco.com/c/en/us/products/collateral/interfaces-modules/transceiver-modules/data_sheet_c78-455693.html">30 m at 10G</a>; a 100 ft cable is 30.48 m. Do not order a cable or module combination beyond its published rating.</li>
+<li>Buy a used <strong>HPE 560FLR-SFP+</strong> for the HP if it has the right FlexibleLOM slot and no suitable 10G card already installed.</li>
+<li>Buy a genuine used <strong>Intel X540-T1 single-port 10G RJ45 PCIe x8 NIC</strong> for the desktop's free x16 slot. Check that its bracket fits and its heatsink has airflow. The card in your photo, <strong>ImageStream PCIE-ETH-GIGX6</strong>, has six SFP cages and is <strong>not</strong> the assumed 10G desktop card. Its exact speed still needs a live hardware ID or link test; set it aside for this build.</li>
+<li>Buy a Windows-compatible <strong>USB4/Thunderbolt 10GBASE-T RJ45 adapter</strong> for the laptop. Keep the two existing Cisco copper 10G SFP+ modules, four 1G copper SFP modules for Dell, short HP fiber/optics, and four Dell Cat5e patch cables.</li>
+<li>Keep the complete delivered cart <strong>under $300</strong>. The <a href="PARTS.html">parts and budget</a> show the current target. Do not buy CPU, RAM, another Dell NIC, a 40G module, or Pi hardware for this first deployment.</li>
+</ul>
+<p>This is your photographed ImageStream card. It has <strong>six SFP cages</strong>, and its <code>PCIE-ETH-GIGX6</code> label does not establish 10 Gb/s operation. Keep it aside until a live PCI ID and link test establish its actual capabilities.</p>
+<p><img alt="Your six-port ImageStream PCIE-ETH-GIGX6 card" src="assets/imagestream-card.jpg" /></p>
+<h2 id="2-make-the-ubuntu-installer-usb">2. Make the Ubuntu installer USB</h2>
+<p>On an existing Windows PC, download these <strong>two files manually</strong>:</p>
+<table>
+<thead>
+<tr>
+<th>File</th>
+<th>Version</th>
+<th>Source</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>ubuntu-24.04.5-live-server-amd64.iso</code></td>
+<td>Ubuntu Server 24.04.5 LTS amd64</td>
+<td><a href="https://releases.ubuntu.com/24.04/ubuntu-24.04.5-live-server-amd64.iso">Ubuntu release file</a></td>
+</tr>
+<tr>
+<td><code>rufus-4.15p.exe</code></td>
+<td>Rufus 4.15 Portable</td>
+<td><a href="https://rufus.ie/downloads/">Rufus official downloads</a></td>
+</tr>
+</tbody>
+</table>
+<p>Check the ISO in PowerShell before writing it:</p>
+<pre><code class="language-powershell">(Get-FileHash .\ubuntu-24.04.5-live-server-amd64.iso -Algorithm SHA256).Hash.ToLower()
+</code></pre>
+<p>Expected hash: <code>97f3d7ffb032c3eb3b23d2c8be9cc76e60c2c1f2c0146ba5ba9fe01cafae0fd8</code>. Compare it with <a href="https://releases.ubuntu.com/24.04/SHA256SUMS">Ubuntu's official SHA256SUMS</a>. Use Rufus to write the ISO to the owned <strong>64 GB USB stick</strong>. Choose the USB carefully because Rufus erases it. Use <strong>MBR / BIOS or UEFI-CSM</strong> for these older servers. The same stick can install both servers. The stick is installer/recovery media; the HP boots from the SSD and the Dell from its HDD virtual disk.</p>
+<h2 id="3-fit-the-drives-and-cables">3. Fit the drives and cables</h2>
+<p><img alt="Initial HP and Dell drive layouts" src="assets/drives.svg" /></p>
+<p>Power both servers off. Write down each drive's serial number and verify any old data has been copied elsewhere. <strong>Making a RAID0 logical drive erases the selected disks.</strong> Fit the 512 GB SSD and four 300 GB 2.5-inch HDDs in the HP's 2.5-inch bays. Fit the remaining two 300 GB 2.5-inch HDDs in the Dell's 3.5-inch trays using the owned connector-aligning adapters.</p>
+<p>At the HP Smart Array setup screen, make <strong>two separate logical drives</strong>: the SSD by itself, then the four HDDs together as RAID0. At the Dell PERC screen, make one RAID0 virtual disk from its two HDDs. Stop if the drive identities or sizes do not match. <a href="https://www.hpe.com/psnow/downloadDoc/HP%20ProLiant%20DL360p%20Generation%208%20%28Gen8%29-c04123167.pdf?deepLink=&amp;form=false&amp;hf=regular&amp;id=c04123167.pdf&amp;isFutureVersion=true&amp;originalObjectName=&amp;prelaunchSection=&amp;preview=false&amp;print=&amp;r=&amp;section=&amp;softrollSection=&amp;ver=2#page=1">HP front and rear reference</a>, <a href="https://i.dell.com/sites/doccontent/business/solutions/engineering-docs/en/Documents/server-poweredge-r710-tech-guidebook.pdf">Dell R710 front and rear photos</a>, and <a href="https://www.cisco.com/c/en/us/td/docs/switches/lan/catalyst3850/hardware/installation/guide/b_c3850_hig.pdf">Cisco 3850 front-panel reference</a> help identify the physical parts.</p>
+<p>Cable the <strong>HP 10G optic</strong> to the Cisco with matching owned SR/multimode or LR/single-mode parts. Cable the <strong>Dell's four onboard RJ45 ports</strong> to four separate Cisco 1G copper SFP ports using owned Cat5e. Cable the desktop's new RJ45 NIC and the laptop's RJ45 adapter to <strong>different Cisco 10G copper-module ports</strong>, each over its own Cat6A run.</p>
+<h2 id="4-install-ubuntu-on-both-servers">4. Install Ubuntu on both servers</h2>
+<p>Boot the HP installer from USB (usually <strong>F11</strong> for a one-time boot menu). In custom storage, choose the <strong>SSD logical drive</strong> for the OS. Make boot partition(s) as the installer requires, then <strong>64 GiB ext4 mounted at <code>/</code></strong> and the remaining SSD space <strong>ext4 mounted at <code>/srv/homelab</code></strong>. Format the separate four-HDD logical drive as <strong>ext4 mounted at <code>/srv/bulk</code></strong>. Select <strong>OpenSSH server</strong>. Keep the installer username and password.</p>
+<p>Boot the Dell from the same USB stick (usually <strong>F11</strong> for its boot manager). Install Ubuntu on the <strong>two-HDD PERC virtual disk</strong>, with OpenSSH enabled. Its root filesystem holds Docker and active projects. If either installer shows the wrong logical-drive sizes, stop and inspect the controller setup.</p>
+<p>After boot, check the HP mounts before running any scripts:</p>
+<pre><code class="language-bash">lsblk -f
+findmnt /srv/homelab
+findmnt /srv/bulk
+</code></pre>
+<p>Both HP mounts must be ext4 and listed in <code>/etc/fstab</code>. Keep an independent copy of unique files: both HDD arrays are RAID0, and GitHub only holds code you have pushed.</p>
+<h2 id="5-give-the-machines-stable-lan-addresses">5. Give the machines stable LAN addresses</h2>
+<p>Reserve addresses in the router or assign deliberate static addresses. Record these values on paper or in a private local note:</p>
+<table>
+<thead>
+<tr>
+<th>Item</th>
+<th>Your value</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Cisco LAN VLAN and unused host ports</td>
+<td><code>________</code></td>
+</tr>
+<tr>
+<td>HP 10G IP / Dell bond0 IP</td>
+<td><code>________ / ________</code></td>
+</tr>
+<tr>
+<td>Desktop 10G IP / laptop 10G IP</td>
+<td><code>________ / ________</code></td>
+</tr>
+<tr>
+<td>Dell's four real Ubuntu NIC names</td>
+<td><code>________ / ________ / ________ / ________</code></td>
+</tr>
+</tbody>
+</table>
+<p>At the Cisco console, run the <strong>read-only checks</strong> at the top of <a href="../switch/candidate.txt">the switch candidate</a>. Identify the existing router uplink and management path, real VLAN and unused host ports. Replace <strong>every</strong> placeholder before applying the candidate host-port commands. Do not paste <code>LAN_VLAN</code> as written. The Dell's four switch ports must join one LACP EtherChannel. From the Dell <strong>local console</strong>, follow <a href="DELL-NETWORK.html">the copper bond guide</a> to create <code>bond0</code>. It includes a backup and manual recovery procedure; changing the live LAN connection interrupts SSH.</p>
+<p>Before installing HP services, confirm that the HP's optic is accepted and its NIC negotiates <strong>10000Mb/s</strong>. The HP deployment script will check this. On both Windows PCs, install the purchased adapters and check for a <strong>10 Gbps</strong> link on a short cable first. Use the vendor's Windows driver if Windows Update does not recognise the adapter. The <a href="https://www.intel.com/content/www/us/en/download/727998/intel-network-adapter-driver-for-microsoft-windows-11.html">Intel Windows 11 driver page</a> is a starting point for a genuine Intel card; OEM-branded cards may need their OEM driver.</p>
+<h2 id="6-clone-this-repo-on-each-machine">6. Clone this repo on each machine</h2>
+<p>The repository contains scripts, examples and diagrams. It contains no passwords, private keys, model weights, ISO image or driver binaries.</p>
+<p>On each <strong>Ubuntu server</strong>, sign in as the ordinary Ubuntu user. Use <code>homelab-hp</code> on the HP and <code>homelab-dell</code> on the Dell:</p>
+<pre><code class="language-bash">sudo apt-get update
+sudo apt-get install -y git gh
+gh auth login
+gh repo clone Noxy-HNR/homelab-hp homelab-stack
+cd homelab-stack
+</code></pre>
+<p>Replace <code>homelab-hp</code> with <code>homelab-dell</code> on the Dell. These are private repositories, so sign in with an account that can read them. On each <strong>Windows PC</strong>, install Git and GitHub CLI once if missing, then clone. Use <code>homelab-desktop</code> on the desktop and <code>homelab-laptop</code> on the laptop:</p>
+<pre><code class="language-powershell">winget install --id Git.Git --exact
+winget install --id GitHub.cli --exact
+gh auth login
+gh repo clone Noxy-HNR/homelab-desktop homelab-stack
+Set-Location .\homelab-stack
+</code></pre>
+<p>Replace <code>homelab-desktop</code> with <code>homelab-laptop</code> on the laptop. Restart the Windows terminal if it does not yet find <code>gh</code> or <code>git</code>. Run the installers <strong>from the clone</strong> so their nearby support files are present. Use <code>git pull --ff-only</code> in the clone for later updates; do not commit the local client JSON or keys.</p>
+<h2 id="7-install-the-hp-software">7. Install the HP software</h2>
+<p>Follow <a href="setup/HP.html">the HP setup page</a>. It installs the NAS services, model library, authenticated web app, backup tools, and live metrics. The installer prints the server login token. Open <code>http://HP-IP:8088/</code> and sign in.</p>
+<h2 id="8-install-the-dell-software">8. Install the Dell software</h2>
+<p>Follow <a href="setup/DELL.html">the Dell setup page</a>. It installs Docker, the development workbench, project jobs, file search, real MCP tools, Cockpit, and Portainer. The command needs <strong>both</strong> IP addresses: <code>sudo bash dell/deploy.sh install DELL_IP HP_IP</code>. Open <code>http://DELL-IP:8090/</code> and sign in with the Dell token.</p>
+<h2 id="9-set-up-the-windows-pcs">9. Set up the Windows PCs</h2>
+<p>Follow <a href="setup/WINDOWS.html">the Windows setup page</a>. It installs the tools for each PC and the <strong>Homelab Control Center</strong> desktop shortcut. Use the control app to browse the HP model library, link a selected GGUF, and load it through the laptop's existing Switchboard. Steam buttons become usable after step 10 below.</p>
+<h2 id="10-set-up-the-exclusive-steam-drive">10. Set up the exclusive Steam drive</h2>
+<p>This is the one part that needs real values from <strong>both PCs</strong>. Do it after their 10G links and the HP NAS are working.</p>
+<p>On each Windows PC, from its repo clone in <strong>elevated PowerShell</strong>, run <code>Prepare-Client.ps1</code> with that PC's role and 10G source IP. Example on the desktop:</p>
+<pre><code class="language-powershell">powershell -ExecutionPolicy Bypass -File .\client\game-drive\Prepare-Client.ps1 -HostRole desktop -HpIp 192.168.1.10 -LocalIp 192.168.1.30
+</code></pre>
+<p>Repeat on the laptop with <code>-HostRole laptop</code> and the laptop's own 10G IP. The helper creates a <strong>different SSH key on each PC</strong>, a local ignored <code>game-client.json</code>, and prints each Windows iSCSI initiator IQN. Copy the <strong>two public <code>.pub</code> files only</strong> to the HP. On the HP, copy <code>hp/iscsi/controller.example.json</code> to <code>hp/iscsi/controller.json</code>, then fill in the two printed IQNs and HP 10G IP. Do not commit that file. Run:</p>
+<pre><code class="language-bash">sudo bash hp/iscsi/install-controller.sh hp/iscsi/controller.json /path/to/desktop.pub /path/to/laptop.pub
+</code></pre>
+<p>The installer creates separate <code>gamehandoff-desktop</code> and <code>gamehandoff-laptop</code> SSH accounts. Each key can claim or release only its own host. From each PC, run its matching command below, replacing <code>HP-IP</code> with the real HP address. Compare the SSH host-key fingerprint shown on the PC with the HP console (<code>ssh-keygen -lf /etc/ssh/ssh_host_ed25519_key.pub</code>) before accepting it. These restricted accounts cannot open an interactive shell. <code>GameDrive.ps1</code> then uses strict host-key checking. The controller intentionally uses iSCSI IQN ACLs without CHAP on the LAN, and the target is enabled for only one PC at a time.</p>
+<pre><code class="language-powershell"># Desktop only:
+ssh -i &quot;$env:USERPROFILE\.ssh\homelab_game_desktop&quot; gamehandoff-desktop@HP-IP 'sudo -n /usr/bin/python3 /usr/local/sbin/game-lun-controller.py status'
+# Laptop only:
+ssh -i &quot;$env:USERPROFILE\.ssh\homelab_game_laptop&quot; gamehandoff-laptop@HP-IP 'sudo -n /usr/bin/python3 /usr/local/sbin/game-lun-controller.py status'
+</code></pre>
+<p>On the <strong>desktop first</strong>, run <code>GameDrive.ps1 -Action Probe -ConfigPath .\client\game-drive\game-client.json</code> in elevated PowerShell. Read the output: check the new disk is exactly the <strong>256 GiB iSCSI</strong> disk and record its <code>UniqueId</code> and byte size. Only then use Windows Disk Management to initialize <strong>that disk</strong> as GPT, make one NTFS volume named <code>SteamGames</code>, and assign <code>S:</code>. Add <code>S:\SteamLibrary</code> in Steam. Enter the observed <code>ExpectedDiskUniqueId</code> and <code>ExpectedSizeBytes</code> in both PCs' local <code>game-client.json</code>. Do not initialize the disk again on the laptop.</p>
+<p>Close Steam and games, then release the drive from the desktop:</p>
+<pre><code class="language-powershell">powershell -ExecutionPolicy Bypass -File .\client\game-drive\GameDrive.ps1 -Action Release -ConfigPath .\client\game-drive\game-client.json
+</code></pre>
+<p>On the laptop, run <code>-Action Attach</code> with its own local config. Release it before returning to the desktop. <strong>Never enable Windows iSCSI persistent or favorite-target reconnect</strong> for this volume. Use <code>-Action Status</code> when unsure who owns it. The <a href="GAME-DRIVE.html">detailed handoff guide</a> covers a failed release or a crash.</p>
+<h2 id="11-verify-the-finished-build">11. Verify the finished build</h2>
+<ul>
+<li>HP and both PC links show <strong>10 Gb/s</strong>. The HP's two ext4 mounts and shares remain available after a reboot. The HP dashboard works even when the Dell is off.</li>
+<li>Cisco and Dell show <strong>four bundled 1 Gb/s LACP members</strong>. Dell SSH, Docker Compose, the workbench and its MCP tools, Cockpit and Portainer work after a reboot.</li>
+<li>The laptop opens <code>\\HP-IP\Models</code> and loads one linked GGUF from the HP while its own inference process runs. Its existing local model still works with the HP disconnected.</li>
+<li>A small Steam game launches from <code>S:</code> on the desktop, then from <code>S:</code> on the laptop <strong>after a successful release</strong>. Each PC sees the same library, never concurrently.</li>
+</ul>
+<p>The <a href="VALIDATION.html">validation record</a> says what has been checked offline and what still needs to be proven on the actual hardware.</p><footer>Built from the Markdown guide in Noxy-HNR/homelab-stack. Example screenshots use local test data; the physical server checks happen during setup.</footer></main><script src="assets/guide.js"></script></body></html>

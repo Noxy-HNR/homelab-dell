@@ -1,7 +1,7 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1120 570" role="img" aria-labelledby="title desc">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1120 600" role="img" aria-labelledby="title desc">
   <title id="title">Homelab cable map</title>
   <desc id="desc">HP NAS uses short fiber to the Cisco switch. Dell uses four Cat5e gigabit cables. Desktop and laptop each use a separate long Cat6A ten-gigabit cable.</desc>
-  <rect width="1120" height="570" rx="22" fill="#f5f8fc"/>
+  <rect width="1120" height="600" rx="22" fill="#f5f8fc"/>
   <style>text{font-family:Arial,sans-serif;fill:#15243b}.node{fill:#fff;stroke:#24476b;stroke-width:3}.head{font-size:22px;font-weight:bold}.small{font-size:17px}.link{fill:none;stroke-width:9;stroke-linecap:round}.tag{font-size:17px;font-weight:bold}</style>
   <text x="35" y="48" class="head">Rack</text><text x="745" y="48" class="head">Room</text>
   <rect class="node" x="30" y="80" width="285" height="110" rx="13"/><text x="48" y="116" class="head">HP DL360p Gen8</text><text x="48" y="147" class="small">NAS · models · Steam LUN</text><text x="48" y="173" class="small">10G SFP+ optic</text>
@@ -9,9 +9,10 @@
   <rect class="node" x="390" y="195" width="285" height="170" rx="13"/><text x="410" y="234" class="head">Cisco 3850-24XS</text><text x="410" y="264" class="small">SFP / SFP+ ports</text><text x="410" y="294" class="small">Dell: 4-port LACP group</text><text x="410" y="323" class="small">PCs: separate 10G ports</text>
   <rect class="node" x="755" y="80" width="320" height="125" rx="13"/><text x="773" y="116" class="head">Desktop</text><text x="773" y="146" class="small">Purchased X540-T1 10G RJ45</text><text x="773" y="176" class="small">GTX 1050 Ti · Windows 11</text>
   <rect class="node" x="755" y="375" width="320" height="125" rx="13"/><text x="773" y="412" class="head">Laptop</text><text x="773" y="443" class="small">USB4 / Thunderbolt 10G RJ45</text><text x="773" y="473" class="small">Local AI · Windows 11</text>
-  <path class="link" stroke="#27a780" d="M315 143 H353 Q375 143 375 200 H390"/><text x="315" y="112" class="tag">owned short fiber · 10G</text>
-  <path class="link" stroke="#5983bd" d="M315 455 H354 Q375 455 375 348 H390"/><text x="327" y="498" class="tag">4 × owned Cat5e · 1G each</text>
-  <path class="link" stroke="#e38e39" d="M675 234 H716 Q736 234 736 148 H755"/><text x="700" y="110" class="tag">Cat6A run #1 · 10G</text>
-  <path class="link" stroke="#d6a532" d="M675 327 H716 Q736 327 736 437 H755"/><text x="700" y="530" class="tag">Cat6A run #2 · 10G</text>
-  <text x="35" y="557" class="small">The photographed ImageStream six-SFP card is not used as the desktop 10G adapter.</text>
+  <path class="link" stroke="#27a780" d="M315 143 H353 Q375 143 375 200 H390"/>
+  <path class="link" stroke="#5983bd" d="M315 455 H354 Q375 455 375 348 H390"/>
+  <path class="link" stroke="#e38e39" d="M675 234 H716 Q736 234 736 148 H755"/>
+  <path class="link" stroke="#d6a532" d="M675 327 H716 Q736 327 736 437 H755"/>
+  <text x="35" y="552" class="small">Green: HP fiber 10G · Blue: Dell 4 × Cat5e 1G LACP · Orange / gold: two separate Cat6A 10G runs</text>
+  <text x="35" y="580" class="small">The photographed ImageStream six-SFP card is set aside until its port speed is verified.</text>
 </svg>

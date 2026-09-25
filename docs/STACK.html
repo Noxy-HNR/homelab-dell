@@ -1,0 +1,42 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>What each machine runs · Homelab</title><link rel="stylesheet" href="assets/guide.css"></head><body><aside><strong>Homelab</strong><p>Your setup guide.<br>One machine at a time.</p><a href="guide.html">Start here</a><a href="INSTALL.html">1 · Hardware & Ubuntu</a><a href="setup/HP.html">2 · HP NAS</a><a href="setup/DELL.html">3 · Dell workbench</a><a href="setup/WINDOWS.html">4 · Windows PCs</a><a href="GAME-DRIVE.html">5 · Steam drive</a><a href="DAILY-USE.html">Use your homelab</a><a href="PARTS.html">Parts to buy</a><a href="VALIDATION.html">What is tested</a></aside><main><div class="topbar"><span>INSTALL · USE · RECOVER</span><button id="print">Print this page</button></div><h1 id="what-each-machine-runs">What each machine runs</h1>
+<p>The goal is local AI on the laptop and desktop, a shared model library, a direct server-hosted Steam game drive, and a Linux development/MCP machine. The NAS and Dell do not need CPU or RAM upgrades for the first build. The photographed ImageStream <strong>PCIE-ETH-GIGX6</strong> has six SFP cages and is not counted as a 10 GbE SFP+ NIC; its GIGX6 label suggests gigabit ports, pending a live PCI ID check.</p>
+<h2 id="hp-dl360p-gen8-always-on">HP DL360p Gen8 — always on</h2>
+<ul>
+<li><strong>OS:</strong> Ubuntu Server 24.04 LTS amd64 on the 512 GB SATA SSD. A 64 GiB ext4 root partition and the remaining SSD space at <code>/srv/homelab</code> hold the OS, dashboard and 256 GiB Steam iSCSI image.</li>
+<li><strong>Bulk storage:</strong> four 300 GB 2.5-inch HDDs in one Smart Array RAID0 logical drive, ext4 at <code>/srv/bulk</code>. <code>Projects</code>, <code>Backups</code> and <code>Models</code> Samba shares live here. This is about 1.09 TiB before formatting. The <code>Backups</code> share is on the same array, so it is not a separate failure copy.</li>
+<li><strong>Network:</strong> an HPE 560FLR-SFP+ 10 GbE port, matched owned optical modules and owned short fiber to the Cisco. The HP's chosen 10G IP is the iSCSI portal and dashboard address.</li>
+<li><strong>Software from <code>hp/deploy.sh</code>:</strong> OpenSSH, Samba, targetcli-fb/Linux LIO, smartmontools, ethtool, Cockpit, Restic, and the Homelab web app. The app has live server metrics, a GGUF catalog, a verified model download queue, Steam ownership status, and backup controls. The game handoff controller is installed later after both Windows initiator IQNs and SSH public keys are known.</li>
+<li><strong>LAN services:</strong> SMB 445, iSCSI 3260, dashboard HTTP 8088, Cockpit HTTPS 9090, SSH 22. No router port forwarding.</li>
+<li><strong>Daily use:</strong> browse <code>\\HP-IP\Models</code> from the laptop; leave the HP running so models and games stay available.</li>
+</ul>
+<h2 id="dell-r710-turn-on-for-development">Dell R710 — turn on for development</h2>
+<ul>
+<li><strong>OS/storage:</strong> Ubuntu Server 24.04 LTS amd64 on one PERC RAID0 virtual disk made from two 300 GB 2.5-inch HDDs in owned 3.5-inch bay adapters. This is about 559 GiB before formatting.</li>
+<li><strong>Network:</strong> four built-in 1 GbE RJ45 ports over owned Cat5e patch leads to four 1 GbE copper SFP modules in the Cisco. Netplan <code>bond0</code> and a matching Cisco LACP EtherChannel provide up to 4 Gb/s across multiple flows; an individual transfer uses one 1 Gb/s member.</li>
+<li><strong>Software from <code>dell/deploy.sh</code>:</strong> OpenSSH, Git/Git LFS, Python/venv/pipx, C/C++ toolchain, CMake, Ninja, ripgrep, htop, smartmontools, Docker Engine from Docker's Ubuntu repository, Compose, Buildx, Cockpit and Portainer CE.</li>
+<li><strong>Workbench:</strong> a web app on port 8090 creates a Python starter project or imports a public GitHub repository, queues named test/build jobs, keeps bounded logs, and searches registered project text. Project sources live under <code>/srv/homelab-projects</code>.</li>
+<li><strong>MCP:</strong> the workbench's real project and job tools bind to Dell loopback port 8765. A PC reaches them through an SSH tunnel and uses the Dell app token. Additional independent MCP services may use Docker Compose.</li>
+<li><strong>LAN services:</strong> workbench HTTP 8090, SSH 22, Cockpit HTTPS 9090, Portainer HTTPS 9443. The MCP endpoint is reachable only through the local SSH tunnel. The Dell's containers restart when it boots, but the server must be on to use them.</li>
+<li><strong>Daily use:</strong> use the workbench, VS Code Remote-SSH or terminal SSH for Linux projects; keep active source trees and container data on Dell storage.</li>
+</ul>
+<h2 id="windows-desktop-local-tools-and-10g-gaming-client">Windows desktop — local tools and 10G gaming client</h2>
+<ul>
+<li><strong>OS/hardware:</strong> keep Windows 11, GTX 1050 Ti, 700 W PSU and local SSD. Add one genuine used Intel X540-T1 10GBASE-T RJ45 PCIe x8 card in the free x16 slot with the proper bracket and airflow. One pure-copper Cat6A cable goes to one Cisco 10GBASE-T SFP+ module.</li>
+<li><strong>Software from <code>desktop/install.ps1</code>:</strong> Git, VS Code, PowerShell 7, uv, Steam, Windows Subsystem for Linux with Ubuntu, Docker Desktop, a small local Ollama/Qwen3 assistant, and the Homelab Control Center shortcut when both server IPs are supplied. The local model directory stays on a local fixed drive.</li>
+<li><strong>Steam:</strong> use the shared iSCSI volume as <code>S:</code> only while the desktop owns it. <code>GameDrive.ps1</code> handles attach/release. It does not format the volume.</li>
+</ul>
+<h2 id="windows-laptop-main-ai-client">Windows laptop — main AI client</h2>
+<ul>
+<li><strong>OS/hardware:</strong> keep Windows 11 and the existing native llama.cpp, Switchboard, model, recorder and GPU settings. Add a USB4/Thunderbolt 10GBASE-T RJ45 adapter with Windows driver. Its own Cat6A cable goes to a separate copper module in the Cisco.</li>
+<li><strong>Software from <code>laptop/install.ps1</code>:</strong> add Git, VS Code, PowerShell 7, uv and Steam if missing. Supplying both server IPs also creates the Homelab Control Center shortcut. The installer does not replace the laptop's current <code>C:\AI</code> model stack.</li>
+<li><strong>Models:</strong> store larger GGUF files in <code>\\HP-IP\Models</code> and register selected files as links in <code>C:\AI\models</code> with <code>laptop/NetworkModels.ps1</code>. The laptop loads the selected file over SMB and runs inference locally. Keep the lightweight fallback model on the laptop for offline use.</li>
+<li><strong>MCP:</strong> Switchboard stays local on the laptop. Dell MCP services are optional additions through SSH forwarding.</li>
+<li><strong>Steam:</strong> attach the same <code>S:</code> volume only after a clean release from the desktop.</li>
+</ul>
+<h2 id="cisco-3850-24xs-lan-switch">Cisco 3850-24XS — LAN switch</h2>
+<ul>
+<li>Keep its current IOS XE and uplink. Use one SFP+ port for HP fiber, one 10GBASE-T module for each PC, and four 1 GbE copper SFP ports for Dell LACP. The example port numbers and VLAN in <code>switch/candidate.txt</code> are <strong>placeholders</strong> to adapt at the console.</li>
+<li>A four-port LACP group does not need QSFP. No firmware upgrade is included in the first deployment.</li>
+</ul>
+<h2 id="limits-and-recovery">Limits and recovery</h2>
+<p>The HP and Dell HDD arrays are RAID0: one member failure loses the entire corresponding array. GitHub backs up only code you commit and push. Keep an independent copy of irreplaceable files, credentials, game saves, and configuration exports. The scripts are safe to re-run when their existing managed files match, and stop on a conflicting configuration instead of overwriting it.</p><footer>Built from the Markdown guide in Noxy-HNR/homelab-stack. Example screenshots use local test data; the physical server checks happen during setup.</footer></main><script src="assets/guide.js"></script></body></html>

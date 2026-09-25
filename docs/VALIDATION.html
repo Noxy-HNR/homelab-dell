@@ -1,0 +1,38 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Validation status · Homelab</title><link rel="stylesheet" href="assets/guide.css"></head><body><aside><strong>Homelab</strong><p>Your setup guide.<br>One machine at a time.</p><a href="guide.html">Start here</a><a href="INSTALL.html">1 · Hardware & Ubuntu</a><a href="setup/HP.html">2 · HP NAS</a><a href="setup/DELL.html">3 · Dell workbench</a><a href="setup/WINDOWS.html">4 · Windows PCs</a><a href="GAME-DRIVE.html">5 · Steam drive</a><a href="DAILY-USE.html">Use your homelab</a><a href="PARTS.html">Parts to buy</a><a href="VALIDATION.html">What is tested</a></aside><main><div class="topbar"><span>INSTALL · USE · RECOVER</span><button id="print">Print this page</button></div><h1 id="validation-status">Validation status</h1>
+<p><strong>Prepared and checked offline; the physical HP, Dell, Cisco ports, purchased NICs and Windows iSCSI handoff have not yet been configured.</strong> A parser or mocked controller test does not prove that a Smart Array, PERC, optic, cable or Windows driver will work on the target machine.</p>
+<p>From a Windows clone with Python and Git for Windows installed, run:</p>
+<pre><code class="language-powershell">powershell -ExecutionPolicy Bypass -File .\tests\verify-source.ps1 -Applications
+</code></pre>
+<p>On 2026-09-24 the source verification passed: Bash and PowerShell syntax, Python compilation, the LIO and Steam controller tests, the handoff SSH identity checks, local guide links and diagrams, ignored client secrets, Windows control app guards, and <strong>190 application tests passed, one Linux-only test was skipped</strong>. <code>node --check</code> passed for the browser app. A local HTTP preview also signed in to the HP and Dell pages; it listed a sample GGUF, created a Dell example project, ran its test job, and found indexed text. The screenshots in <code>docs/assets</code> show that local preview, not the physical servers.</p>
+<p>The suite does <strong>not</strong> install packages on the HP or Dell, create arrays, format a disk, open iSCSI sessions, configure the switch, or edit the current laptop's local AI stack. The first real installation remains the hardware acceptance test.</p>
+<table>
+<thead>
+<tr>
+<th>Machine</th>
+<th>First live checks needed during installation</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>HP</td>
+<td>Smart Array shows SSD and four-HDD volumes; both ext4 mounts survive a reboot; purchased 10G NIC and owned optic load without errors and negotiate 10 Gb/s; Samba, LIO and dashboard work after reboot.</td>
+</tr>
+<tr>
+<td>Dell</td>
+<td>PERC shows the correct two-HDD volume; four onboard 1G ports are bundled in Cisco and <code>/proc/net/bonding/bond0</code>; Docker, workbench project/test/search, MCP tool connection, Cockpit and Portainer work after reboot.</td>
+</tr>
+<tr>
+<td>Desktop</td>
+<td>Genuine X540-T1 driver loads, NIC fits and stays cool, Cat6A link negotiates 10 Gb/s; Windows tools install and a game launches from <code>S:</code>.</td>
+</tr>
+<tr>
+<td>Laptop</td>
+<td>USB4/Thunderbolt adapter loads and negotiates 10 Gb/s; existing <code>C:\AI</code> stack remains intact; selected GGUF loads from SMB; game launches after exclusive handoff.</td>
+</tr>
+<tr>
+<td>Switch</td>
+<td>Actual VLAN and unused ports match the candidate, 10G copper modules are accepted, optical HP port is up, Dell EtherChannel has four bundled members.</td>
+</tr>
+</tbody>
+</table>
+<p>Record failures before changing any other layer. The <a href="INSTALL.html">main install guide</a> lists the order so a broken link or mount is caught before services depend on it.</p><footer>Built from the Markdown guide in Noxy-HNR/homelab-stack. Example screenshots use local test data; the physical server checks happen during setup.</footer></main><script src="assets/guide.js"></script></body></html>

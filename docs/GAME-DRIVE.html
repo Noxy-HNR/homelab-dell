@@ -1,0 +1,32 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Shared Steam S: drive · Homelab</title><link rel="stylesheet" href="assets/guide.css"></head><body><aside><strong>Homelab</strong><p>Your setup guide.<br>One machine at a time.</p><a href="guide.html">Start here</a><a href="INSTALL.html">1 · Hardware & Ubuntu</a><a href="setup/HP.html">2 · HP NAS</a><a href="setup/DELL.html">3 · Dell workbench</a><a href="setup/WINDOWS.html">4 · Windows PCs</a><a href="GAME-DRIVE.html">5 · Steam drive</a><a href="DAILY-USE.html">Use your homelab</a><a href="PARTS.html">Parts to buy</a><a href="VALIDATION.html">What is tested</a></aside><main><div class="topbar"><span>INSTALL · USE · RECOVER</span><button id="print">Print this page</button></div><h1 id="shared-steam-s-drive">Shared Steam <code>S:</code> drive</h1>
+<p>The HP hosts one 256 GiB iSCSI disk on its SSD. Windows sees it as a disk, so Steam can launch games directly from <code>S:</code>. <strong>Only one PC may own it at a time.</strong> The controller permits either the desktop or laptop initiator, and the scripts require a deliberate release before the other can attach.</p>
+<p><img alt="Steam drive ownership moves between the two PCs" src="assets/game-drive.svg" /></p>
+<h2 id="one-time-setup">One-time setup</h2>
+<ol>
+<li>Finish HP NAS installation and both PC 10G links first. The target begins disabled.</li>
+<li>On each PC, run <code>Prepare-Client.ps1</code> from <a href="INSTALL.html#10-set-up-the-exclusive-steam-drive">the main guide</a>. It prints that PC's initiator IQN, generates its own SSH public/private key pair, and writes its ignored local <code>game-client.json</code>.</li>
+<li>Transfer each PC's <strong>public</strong> <code>.pub</code> file to the HP. Copy <code>hp/iscsi/controller.example.json</code> to ignored <code>hp/iscsi/controller.json</code> on HP and enter both real IQNs and the HP's 10G IP. Run <code>sudo bash hp/iscsi/install-controller.sh hp/iscsi/controller.json /path/to/desktop.pub /path/to/laptop.pub</code>.</li>
+<li>Run the matching one-time SSH <code>status</code> command in <a href="INSTALL.html#10-set-up-the-exclusive-steam-drive">the main guide</a> from each PC. Verify the HP host-key fingerprint through your HP console before accepting it. These accounts cannot open an interactive shell. Later script calls require strict checking.</li>
+<li>On desktop, run <code>GameDrive.ps1 -Action Probe -ConfigPath .\client\game-drive\game-client.json</code> from elevated PowerShell. Check that <strong>exactly one</strong> new 256 GiB iSCSI disk appears. Record <code>UniqueId</code> and byte size. In Disk Management, initialize <strong>only that disk</strong> as GPT, create one NTFS volume, name it <code>SteamGames</code>, and assign <code>S:</code>. Copy the observed ID and byte size to <code>ExpectedDiskUniqueId</code> and <code>ExpectedSizeBytes</code> in both local client JSON files.</li>
+<li>Add <code>S:\SteamLibrary</code> in desktop Steam. Close Steam, run <code>-Action Release</code>, then attach from the laptop and add the same path there. The laptop must <strong>not initialize or format</strong> the volume again.</li>
+</ol>
+<h2 id="every-time-you-switch-pcs">Every time you switch PCs</h2>
+<ol>
+<li>Close the game and Steam on the current PC.</li>
+<li>From elevated PowerShell on that PC, run:</li>
+</ol>
+<p><code>powershell
+   powershell -ExecutionPolicy Bypass -File .\client\game-drive\GameDrive.ps1 -Action Release -ConfigPath .\client\game-drive\game-client.json</code></p>
+<ol start="3">
+<li>Only after Release reports success, run this on the other PC:</li>
+</ol>
+<p><code>powershell
+   powershell -ExecutionPolicy Bypass -File .\client\game-drive\GameDrive.ps1 -Action Attach -ConfigPath .\client\game-drive\game-client.json</code></p>
+<p>Run <code>-Action Status</code> if you are unsure. Do not configure a persistent/favorite iSCSI reconnect in Windows. The example config requires a <strong>10 Gbps</strong> selected network link so a cable fault does not quietly move games to 1G.</p>
+<h2 id="if-a-pc-crashes-or-release-fails">If a PC crashes or Release fails</h2>
+<p>Do <strong>not</strong> attach on the other PC yet. First make certain the old PC is powered off, its iSCSI session is gone, and it cannot automatically reconnect. On the HP console, check:</p>
+<pre><code class="language-bash">sudo python3 /usr/local/sbin/game-lun-controller.py status
+sudo targetcli /iscsi/iqn.2026-09.local.homelab:steam-games/tpg1 ls
+</code></pre>
+<p>If state is <code>active</code> but the old PC is definitively offline and there are <strong>zero</strong> target sessions, the HP administrator can run <code>sudo python3 /usr/local/sbin/game-lun-controller.py release --host desktop --clean-client-offline</code> (or <code>--host laptop</code> for that owner). If the controller says a transition is incomplete, review the printed state and both client connections before using its guarded <code>recover-neutral --both-clients-offline</code> action. Never delete ACLs or enable the target manually to bypass a refusal. If a session is still present, determine which PC owns it and disconnect it there first.</p>
+<p>The iSCSI target uses per-initiator IQN ACLs and a one-owner controller; CHAP is not configured. Keep its portal on the trusted LAN and do not forward TCP 3260 through the router. Use the game volume only for reinstallable games; Steam saves and launchers may still write to the PC's local disk.</p><footer>Built from the Markdown guide in Noxy-HNR/homelab-stack. Example screenshots use local test data; the physical server checks happen during setup.</footer></main><script src="assets/guide.js"></script></body></html>

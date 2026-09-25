@@ -1,0 +1,202 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Daily use · Homelab</title><link rel="stylesheet" href="assets/guide.css"></head><body><aside><strong>Homelab</strong><p>Your setup guide.<br>One machine at a time.</p><a href="guide.html">Start here</a><a href="INSTALL.html">1 · Hardware & Ubuntu</a><a href="setup/HP.html">2 · HP NAS</a><a href="setup/DELL.html">3 · Dell workbench</a><a href="setup/WINDOWS.html">4 · Windows PCs</a><a href="GAME-DRIVE.html">5 · Steam drive</a><a href="DAILY-USE.html">Use your homelab</a><a href="PARTS.html">Parts to buy</a><a href="VALIDATION.html">What is tested</a></aside><main><div class="topbar"><span>INSTALL · USE · RECOVER</span><button id="print">Print this page</button></div><h1 id="daily-use">Daily use</h1>
+<p>This page shows the things you will do every week. It assumes the <a href="guide.html">start guide</a> is finished.</p>
+<blockquote>
+<p><strong>Not yet proven on real hardware.</strong> The web app has passed offline and local functional tests. Physical hardware verification is still pending. Button names below come from the app's source and may change a little.</p>
+</blockquote>
+<h2 id="your-addresses">Your addresses</h2>
+<table>
+<thead>
+<tr>
+<th>What</th>
+<th>Where</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>HP model library and backups</td>
+<td><code>http://HP_IP:8088/</code></td>
+</tr>
+<tr>
+<td>Dell projects, jobs, search and backups</td>
+<td><code>http://DELL_IP:8090/</code></td>
+</tr>
+<tr>
+<td>Server controls</td>
+<td><code>https://HP_IP:9090/</code> and <code>https://DELL_IP:9090/</code> (Cockpit)</td>
+</tr>
+<tr>
+<td>Containers</td>
+<td><code>https://DELL_IP:9443/</code> (Portainer)</td>
+</tr>
+</tbody>
+</table>
+<p>Each server has its own login token. To show one again, run <code>sudo cat /etc/homelab/app-token</code> <strong>on that server</strong>. A login lasts eight hours.</p>
+<p>If the Dell is off, its page says it is unavailable. That is normal. The HP stays on.</p>
+<hr />
+<h2 id="create-a-project">Create a project</h2>
+<p>Use the <strong>Dell</strong> page.</p>
+<p><img alt="Dell workbench with a sample project and completed test job" src="assets/development-workbench.png" /></p>
+<p><em>Local preview with sample project data; your Dell will show its own measurements and projects.</em></p>
+<ol>
+<li>Sign in at <code>http://DELL_IP:8090/</code>.</li>
+<li>Click <strong>Projects &amp; jobs</strong> in the left menu.</li>
+<li>Under <strong>New workspace</strong>, type a <strong>Project name</strong>. Use lowercase letters, numbers and hyphens only. Example: <code>hello-lab</code>.</li>
+<li>Leave <strong>Public GitHub repository</strong> empty. That makes a Python template.</li>
+<li>Click <strong>Create project</strong>.</li>
+</ol>
+<p><strong>You should see:</strong> a message <em>Project created. Run its test job to check it.</em> Your project appears under <strong>Your workspaces</strong>, with two buttons: <code>test</code> and <code>compile</code>.</p>
+<p>The template holds a small program (<code>app.py</code>), one real test (<code>tests/test_app.py</code>), a <code>README.md</code>, a <code>.gitignore</code> and a <code>pyproject.toml</code>. It lives in <code>/srv/homelab-projects/hello-lab</code> on the Dell.</p>
+<p><strong>To import a project from GitHub instead</strong>, paste a public address such as <code>https://github.com/OWNER/REPOSITORY</code>. Only public <code>https://github.com/</code> addresses work. The import has a 90 second limit. Projects with symbolic links are refused. Imported code runs only when you start a job. Run projects you trust.</p>
+<h2 id="run-a-test-job-and-read-the-log">Run a test job and read the log</h2>
+<ol>
+<li>In <strong>Your workspaces</strong>, click <strong>test</strong> next to your project.</li>
+</ol>
+<p><strong>You should see:</strong> a message <em>Job queued.</em> and a <strong>Job output</strong> panel. The state badge goes from <code>queued</code> to <code>running</code> to <code>succeeded</code>. The panel refreshes on its own every few seconds.</p>
+<p>For the template project the log shows the test result, like this:</p>
+<pre><code class="language-text">Ran 1 test in 0.001s
+
+OK
+</code></pre>
+<ol start="2">
+<li>To read it later, find the job under <strong>Job history</strong> and click <strong>Open log</strong>.</li>
+<li>To stop a job, click <strong>Cancel</strong> while it is <code>queued</code> or <code>running</code>.</li>
+</ol>
+<p>The states you may see are <code>queued</code>, <code>running</code>, <code>succeeded</code>, <code>failed</code>, <code>cancelled</code>, <code>timed_out</code> and <code>interrupted</code>. A restart marks a running job <code>interrupted</code>. Logs keep the last 128 KiB. A job stops after its time limit (15 minutes for <code>test</code> and <code>compile</code>).</p>
+<p>The two presets are <code>test</code> (unit tests in the <code>tests</code> folder) and <code>compile</code> (Python syntax check). You cannot type your own command into the page. That is on purpose.</p>
+<h2 id="search-your-projects">Search your projects</h2>
+<p>The search index is not filled automatically. Build it first.</p>
+<ol>
+<li>Click <strong>Search files</strong>.</li>
+<li>Click <strong>Rebuild search index</strong>.</li>
+</ol>
+<p><strong>You should see:</strong> a message like <em>Indexed 5 files; skipped 0.</em></p>
+<ol start="3">
+<li>Type words in <strong>Words to find</strong>. Pick a project, or leave it on <strong>All projects</strong>. Click <strong>Search</strong>.</li>
+</ol>
+<p><strong>You should see:</strong> a list of results, each with the project, the file path and a snippet. Click <strong>Read file</strong> to open one.</p>
+<p>Rebuild the index after you edit or import files. Search only reads plain text files inside your projects. It skips secret files such as <code>.env</code> and keys, and folders such as <code>.git</code> and <code>node_modules</code>. Files over 256 KiB are not shown.</p>
+<h2 id="download-a-model">Download a model</h2>
+<p>Use the <strong>HP</strong> page. The HP needs internet access for this.</p>
+<p><img alt="HP GGUF model catalog with a sample file" src="assets/model-library.png" /></p>
+<p><em>Local preview with a sample GGUF; your HP will show the models stored on its array.</em></p>
+<ol>
+<li>Sign in at <code>http://HP_IP:8088/</code>.</li>
+<li>Click <strong>Model library</strong>.</li>
+<li>Under <strong>Download a model to the HP</strong>, fill in:
+   - <strong>Repository</strong>: the Hugging Face name, like <code>owner/model-GGUF</code>.
+   - <strong>Exact file path in the repository</strong>: the <code>.gguf</code> file, like <code>model-Q4_K_M.gguf</code>.
+   - <strong>Revision</strong>: leave <code>main</code> unless you know you need another.
+   - <strong>Save as</strong> (optional): a new file name ending in <code>.gguf</code>.</li>
+<li>Click <strong>Queue download</strong>.</li>
+</ol>
+<p><strong>You should see:</strong> <em>Download queued on the HP.</em> The <strong>Download queue</strong> shows a progress bar. The state goes <code>queued</code>, <code>resolving</code>, <code>downloading</code>, <code>validating</code>, then <code>completed</code>.</p>
+<p>The model appears under <strong>Your models</strong> only after it is complete and checked. If it does not show, click <strong>Scan library</strong>. If a download fails, the reason is shown under the file name. Click <strong>Cancel</strong> to stop one.</p>
+<p>The file is saved in the HP's <code>Models</code> share, so the laptop sees it at <code>\\HP_IP\Models</code>.</p>
+<p><strong>File size does not tell you if a model fits in memory.</strong> Check that before you load a big one.</p>
+<p>To use the model, open <strong>Homelab Control Center</strong> on the laptop (<a href="setup/WINDOWS.html">details</a>):</p>
+<ol>
+<li>Click <strong>Refresh model list</strong>. Paste the HP token if asked.</li>
+<li>Select the model. Click <strong>Link selected model from NAS</strong>. Approve the Windows prompt.</li>
+<li>Click <strong>Load selected model</strong>. Confirm the question. Your existing local Switchboard does the loading.</li>
+</ol>
+<p>The model stays on the HP and is read over the network. The desktop does not use these two buttons.</p>
+<h2 id="back-up-and-restore">Back up and restore</h2>
+<p>A backup is only real after you have restored from it once. Do the whole loop below the first time.</p>
+<h3 id="choose-where-backups-go">Choose where backups go</h3>
+<ul>
+<li>Use a <strong>separate</strong> disk mounted on the server, or use the <strong>other server</strong> over SFTP.</li>
+<li>A backup on the same RAID0 array does not protect you if the array fails. The tool refuses a destination on the same disk as the source.</li>
+<li>Pick folders you cannot download again: projects, notes, saves and exports.</li>
+</ul>
+<h3 id="set-up-a-plan-one-time">Set up a plan (one time)</h3>
+<p>The web page cannot create or edit plans. That is on purpose. A plan is made by an administrator on the server.</p>
+<p>Example on the <strong>Dell</strong>, with a separate backup disk already mounted at <code>/mnt/backup</code>:</p>
+<pre><code class="language-bash">cd ~/homelab-stack
+sudo bash services/configure-backup.sh \
+  --id projects \
+  --source /srv/homelab-projects \
+  --mount /mnt/backup \
+  --repository /mnt/backup/dell-projects
+</code></pre>
+<p><strong>You should see:</strong> the plan is created and the path to a password file is printed. <strong>Copy that password file somewhere safe, away from this server.</strong> Without it you cannot restore.</p>
+<p>To back up to the HP instead, follow <strong>Back up to the other server over SSH</strong> in the <a href="features/OPERATIONS.html">backup guide</a>. It has a few careful manual steps.</p>
+<p>The script never erases, partitions, formats or mounts a disk.</p>
+<h3 id="run-a-backup">Run a backup</h3>
+<ol>
+<li>Open the server's page and click <strong>Backups</strong>.</li>
+<li>Find your plan and click <strong>Back up now</strong>.</li>
+</ol>
+<p><strong>You should see:</strong> a <strong>Backup output</strong> panel. When it ends with the state <code>succeeded</code>, the backup finished. Before you make a plan, the page says <em>No backup plan configured</em>. Nothing is protected until a backup succeeds.</p>
+<ol start="3">
+<li>Click <strong>Check</strong>. This tests the stored data. It should also end <code>succeeded</code>.</li>
+</ol>
+<h3 id="restore">Restore</h3>
+<ol>
+<li>Click <strong>Snapshots</strong> next to the plan.</li>
+<li>Pick a snapshot and click <strong>Restore a copy</strong>. Confirm the question.</li>
+</ol>
+<p><strong>You should see:</strong> the task ends <code>succeeded</code> and shows <strong>Restored files:</strong> with a folder under <code>/var/lib/homelab-app/restores/</code>.</p>
+<p>A restore always goes to a <strong>new</strong> folder. It never overwrites your original files. Look inside on the server to check your files are there:</p>
+<pre><code class="language-bash">sudo ls /var/lib/homelab-app/restores/
+</code></pre>
+<p>After you have proved the backup and restore, schedule the named plan on that server:</p>
+<pre><code class="language-bash">sudo bash services/schedule-backup.sh projects daily
+</code></pre>
+<p>Use your actual plan ID in place of <code>projects</code>. Schedules are opt in. There is no automatic cleanup of old snapshots. See <a href="features/OPERATIONS.html#schedules-and-retention">schedules and retention</a>.</p>
+<h2 id="switch-the-steam-drive-between-pcs">Switch the Steam drive between PCs</h2>
+<p>Only one PC may use <code>S:</code> at a time.</p>
+<ol>
+<li>On the PC that has it: close the game and Steam.</li>
+<li>In <strong>Homelab Control Center</strong>, click <strong>Release game drive</strong>. Approve the Windows prompt. Wait for the command window to report success.</li>
+<li>On the other PC, click <strong>Attach game drive here</strong>.</li>
+<li>Not sure who has it? Click <strong>Steam drive: status</strong>.</li>
+</ol>
+<p>The same three actions work from PowerShell. See the <a href="GAME-DRIVE.html">game drive guide</a>. If a PC crashed, <strong>do not attach on the other PC yet</strong>. Follow the recovery section in that guide.</p>
+<h2 id="update-the-software">Update the software</h2>
+<p>On each server:</p>
+<pre><code class="language-bash">cd ~/homelab-stack
+git pull --ff-only
+sudo bash services/install.sh hp HP_IP DELL_IP     # on the HP
+sudo bash services/install.sh dell DELL_IP HP_IP   # on the Dell
+</code></pre>
+<p>Run only the line for that machine. Your token and settings are kept. If the installer says <code>Existing apps.json differs</code>, an address or path has changed. Stop and check <code>/etc/homelab/apps.json</code>.</p>
+<h2 id="if-something-goes-wrong">If something goes wrong</h2>
+<table>
+<thead>
+<tr>
+<th>You see</th>
+<th>What to do</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>A page will not open</td>
+<td>Check the server is on. On the server run <code>sudo systemctl status homelab-app</code>.</td>
+</tr>
+<tr>
+<td><em>Incorrect login token</em></td>
+<td>You may have the other server's token. Run <code>sudo cat /etc/homelab/app-token</code> on that server.</td>
+</tr>
+<tr>
+<td><em>Wait one minute before trying again</em></td>
+<td>Too many wrong tokens. Wait, then try again.</td>
+</tr>
+<tr>
+<td>A job says <code>failed</code></td>
+<td>Open its log. The last lines say why.</td>
+</tr>
+<tr>
+<td>A search finds nothing</td>
+<td>Click <strong>Rebuild search index</strong>, then search again.</td>
+</tr>
+<tr>
+<td>A backup says <em>no backup plan</em></td>
+<td>Make a plan with <code>services/configure-backup.sh</code> first.</td>
+</tr>
+<tr>
+<td>A download stays <code>failed</code></td>
+<td>Read the message under the file name. Check the HP has internet and the file name is exact.</td>
+</tr>
+</tbody>
+</table>
+<p>Back to the <a href="guide.html">start guide</a>.</p><footer>Built from the Markdown guide in Noxy-HNR/homelab-stack. Example screenshots use local test data; the physical server checks happen during setup.</footer></main><script src="assets/guide.js"></script></body></html>

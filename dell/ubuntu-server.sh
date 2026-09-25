@@ -8,7 +8,7 @@ usage() {
 Usage: sudo bash ubuntu-server.sh ACTION [arguments]
 
 Actions (run in order after installing Ubuntu Server):
-  install-all DELL_LAN_IP   Install base, Docker, dev tools, MCP demo and dashboard
+  install-all DELL_LAN_IP HP_IP   Install base, Docker, dev tools, workbench and MCP tools
   verify-all               Check those components without changing them
   preflight
   install-base
@@ -22,7 +22,7 @@ EOF
 action="${1:-}"
 if [[ -z "$action" ]]; then usage; exit 2; fi
 if [[ "$action" == install-all ]]; then
-  [[ $# -eq 2 ]] || { usage; exit 2; }
+  [[ $# -eq 3 ]] || { usage; exit 2; }
 else
   [[ $# -eq 1 ]] || { usage; exit 2; }
 fi
@@ -161,18 +161,19 @@ verify_all() {
   systemctl is-active --quiet docker.service
   systemctl is-active --quiet cockpit.socket
   docker compose version
-  verify_mcp_demo
+  systemctl is-active --quiet homelab-app.service
+  systemctl is-active --quiet homelab-mcp.service
   local portainer_dir=/opt/homelab/dashboard/portainer
   [[ -f "$portainer_dir/compose.yaml" ]] || { echo 'Portainer is not installed.' >&2; return 1; }
   (cd "$portainer_dir" && docker compose ps --status running --services) | grep -Fxq portainer || {
     echo 'Portainer container is not running.' >&2; return 1;
   }
-  echo 'PASS: Dell base, Docker, dev tools, MCP demo, Cockpit and Portainer'
+  echo 'PASS: Dell base, Docker, dev tools, workbench, MCP tools, Cockpit and Portainer'
 }
 
 install_all() {
   require_root
-  local dell_ip=$1 source_dir
+  local dell_ip=$1 hp_ip=$2 source_dir
   python3 - "$dell_ip" <<'PY'
 import ipaddress, sys
 address = ipaddress.IPv4Address(sys.argv[1])
@@ -186,17 +187,17 @@ PY
   install_base
   install_docker
   install_dev
-  install_mcp_demo
   source_dir="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
   [[ -f "$source_dir/dashboard/install-dell-dashboard.sh" ]] || {
     echo 'Copy the whole setup directory to the Dell.' >&2; return 2;
   }
   bash "$source_dir/dashboard/install-dell-dashboard.sh" "$dell_ip"
+  bash "$source_dir/../services/install.sh" dell "$dell_ip" "$hp_ip"
   verify_all
 }
 
 case "$action" in
-  install-all) install_all "$2" ;;
+  install-all) install_all "$2" "$3" ;;
   verify-all) verify_all ;;
   preflight) preflight ;;
   install-base) install_base ;;

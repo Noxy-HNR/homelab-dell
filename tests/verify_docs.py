@@ -9,9 +9,10 @@ import xml.etree.ElementTree as ET
 
 ROOT = Path(__file__).resolve().parents[1]
 
-for path in ROOT.rglob("*.md"):
-    if ".git" in path.parts:
-        continue
+sources = [ROOT / name for name in subprocess.check_output(
+    ['git', 'ls-files', '--cached', '--others', '--exclude-standard'], cwd=ROOT, text=True
+).splitlines() if (ROOT / name).is_file()]
+for path in (p for p in sources if p.suffix == '.md'):
     body = path.read_text(encoding="utf-8")
     assert body.count("```") % 2 == 0, f"Unclosed code fence: {path}"
     for link in re.findall(r"!?(?:\[[^\]]*\])\(([^)]+)\)", body):
@@ -20,9 +21,9 @@ for path in ROOT.rglob("*.md"):
         target = link.split("#", 1)[0]
         assert (path.parent / target).exists(), f"Broken local link: {path}: {link}"
 
-for path in ROOT.rglob("*.example.json"):
+for path in (p for p in sources if p.name.endswith('.example.json')):
     json.loads(path.read_text(encoding="utf-8"))
-for path in ROOT.rglob("*.svg"):
+for path in (p for p in sources if p.suffix == '.svg'):
     ET.parse(path)
 
 example = json.loads((ROOT / "client/game-drive/windows-client.example.json").read_text(encoding="utf-8"))

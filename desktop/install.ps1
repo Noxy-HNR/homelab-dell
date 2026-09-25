@@ -8,7 +8,9 @@ No disk is initialized, no iSCSI session is opened, and Ollama is not exposed on
 param(
     [ValidateSet('Plan', 'Install', 'PullModel', 'Verify')]
     [string]$Action = 'Plan',
-    [string]$ModelDirectory = 'C:\AI\OllamaModels'
+    [string]$ModelDirectory = 'C:\AI\OllamaModels',
+    [string]$HpIp = '',
+    [string]$DellIp = ''
 )
 
 Set-StrictMode -Version Latest
@@ -107,6 +109,11 @@ switch ($Action) {
             }
         }
         Write-Host 'Reboot if prompted; launch Ubuntu once to create a Linux user, then start Ollama and Docker Desktop.'
+        if ($HpIp -and $DellIp) {
+            & (Join-Path (Split-Path -Parent $PSScriptRoot) 'client\Install-Control-Center.ps1') -Role desktop -HpIp $HpIp -DellIp $DellIp
+        } else {
+            Write-Host 'Next run client\Install-Control-Center.ps1 -Role desktop -HpIp HP_IP -DellIp DELL_IP to create the desktop app shortcut.'
+        }
     }
     'PullModel' {
         $vram = Get-NvidiaVramMiB

@@ -1,0 +1,180 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Windows setup · Homelab</title><link rel="stylesheet" href="../assets/guide.css"></head><body><aside><strong>Homelab</strong><p>Your setup guide.<br>One machine at a time.</p><a href="../guide.html">Start here</a><a href="../INSTALL.html">1 · Hardware & Ubuntu</a><a href="HP.html">2 · HP NAS</a><a href="DELL.html">3 · Dell workbench</a><a href="WINDOWS.html">4 · Windows PCs</a><a href="../GAME-DRIVE.html">5 · Steam drive</a><a href="../DAILY-USE.html">Use your homelab</a><a href="../PARTS.html">Parts to buy</a><a href="../VALIDATION.html">What is tested</a></aside><main><div class="topbar"><span>INSTALL · USE · RECOVER</span><button id="print">Print this page</button></div><h1 id="windows-setup">Windows setup</h1>
+<p>This page sets up the <strong>desktop</strong> and the <strong>laptop</strong>. Do each step on the PC named in it.</p>
+<blockquote>
+<p><strong>The Windows control app is new and has only been tested offline.</strong> It has not been tried on your real PCs yet. If <code>client/Install-Control-Center.ps1</code> is missing from your clone, run <code>git pull --ff-only</code> and look again.</p>
+</blockquote>
+<p><strong>Before you start</strong> you must have finished Parts 3 and 4 of the <a href="../guide.html">start guide</a>. The HP and Dell must be running. You need both addresses and both login tokens.</p>
+<p>Below, <strong>HP_IP</strong> and <strong>DELL_IP</strong> are the server addresses. <strong>LAPTOP_IP</strong> and <strong>DESKTOP_IP</strong> are the 10G addresses of the PCs.</p>
+<h2 id="steps">Steps</h2>
+<h3 id="1-check-the-10g-link-both-pcs">1. Check the 10G link (both PCs)</h3>
+<p>Plug the adapter in. Open PowerShell and run:</p>
+<pre><code class="language-powershell">Get-NetAdapter | Format-Table Name, Status, LinkSpeed
+</code></pre>
+<p><strong>You should see:</strong> one adapter with Status <code>Up</code> and LinkSpeed <code>10 Gbps</code>.</p>
+<p>If it says <code>1 Gbps</code>, stop. Check the cable and the switch port. If the adapter is missing, install its driver. The <a href="https://www.intel.com/content/www/us/en/download/727998/intel-network-adapter-driver-for-microsoft-windows-11.html">Intel Windows 11 driver page</a> is a starting point for a genuine Intel card.</p>
+<h3 id="2-get-this-repo-both-pcs">2. Get this repo (both PCs)</h3>
+<p>Skip this if you already did <a href="../INSTALL.html#6-clone-this-repo-on-each-machine">INSTALL.md step 6</a>. Otherwise:</p>
+<pre><code class="language-powershell">winget install --id Git.Git --exact
+winget install --id GitHub.cli --exact
+gh auth login
+gh repo clone Noxy-HNR/homelab-desktop homelab-stack
+Set-Location .\homelab-stack
+</code></pre>
+<p>On the laptop replace <code>homelab-desktop</code> with <code>homelab-laptop</code>. Close and reopen PowerShell if it cannot find <code>git</code> or <code>gh</code>.</p>
+<h3 id="3-install-the-pc-tools">3. Install the PC tools</h3>
+<p><strong>Desktop.</strong> Open <strong>PowerShell as administrator</strong> in the repo folder:</p>
+<pre><code class="language-powershell">powershell -ExecutionPolicy Bypass -File .\desktop\install.ps1 -Action Plan
+powershell -ExecutionPolicy Bypass -File .\desktop\install.ps1 -Action Install -HpIp HP_IP -DellIp DELL_IP
+</code></pre>
+<p>Restart or finish the first WSL, Docker Desktop and Ollama launch if it asks. Then:</p>
+<pre><code class="language-powershell">powershell -ExecutionPolicy Bypass -File .\desktop\install.ps1 -Action PullModel
+powershell -ExecutionPolicy Bypass -File .\desktop\install.ps1 -Action Verify
+</code></pre>
+<p><strong>Laptop.</strong> Open PowerShell in the repo folder:</p>
+<pre><code class="language-powershell">powershell -ExecutionPolicy Bypass -File .\laptop\install.ps1 -Action Plan
+powershell -ExecutionPolicy Bypass -File .\laptop\install.ps1 -Action InstallTools -HpIp HP_IP -DellIp DELL_IP
+powershell -ExecutionPolicy Bypass -File .\laptop\install.ps1 -Action Verify
+</code></pre>
+<p><strong>You should see:</strong> each <code>Verify</code> finishes without an error, and a <strong>Homelab Control Center</strong> shortcut appears on the desktop. <code>Plan</code> changes nothing. Your existing laptop AI setup is kept.</p>
+<h3 id="4-open-the-model-share-laptop">4. Open the model share (laptop)</h3>
+<p>In File Explorer, go to <code>\\HP_IP\Models</code>. Sign in as <code>homelabshare</code> with the password you set on the HP.</p>
+<p><strong>You should see:</strong> the Models folder. It may be empty until you download a model in <a href="../DAILY-USE.html#download-a-model">Daily use</a>.</p>
+<h3 id="5-prepare-the-steam-settings-both-pcs">5. Prepare the Steam settings (both PCs)</h3>
+<p>The control app's Steam buttons use a small local settings file. You make that file in <a href="../INSTALL.html#10-set-up-the-exclusive-steam-drive">INSTALL.md step 10</a> with <code>Prepare-Client.ps1</code>. It is saved as <code>client\game-drive\game-client.json</code> and is never sent to Git.</p>
+<p>Finish that before you use the control app's Steam buttons. The <a href="../GAME-DRIVE.html">game drive guide</a> explains the whole handoff.</p>
+<h3 id="6-install-the-control-app-both-pcs">6. Install the control app (both PCs)</h3>
+<p>If you passed <code>-HpIp</code> and <code>-DellIp</code> to the machine installer in step 3, it already created the shortcut. Otherwise run this <strong>once on each PC</strong>. Use <code>desktop</code> or <code>laptop</code> as the role.</p>
+<pre><code class="language-powershell">powershell -ExecutionPolicy Bypass -File ./client/Install-Control-Center.ps1 -Role laptop -HpIp HP_IP -DellIp DELL_IP
+</code></pre>
+<p>On the desktop, use <code>-Role desktop</code>.</p>
+<p><strong>You should see:</strong></p>
+<pre><code class="language-text">Installed the Homelab Control Center desktop shortcut.
+Settings: C:\Users\YOU\AppData\Local\Homelab\client-settings.json
+Keep this repository folder in place. The app asks for the HP token when you refresh models; it does not save that token.
+</code></pre>
+<p>A <strong>Homelab Control Center</strong> shortcut is now on your desktop. Keep the repo folder where it is. The shortcut points into it.</p>
+<p>The installer stores only the server addresses, not any token. Running it again keeps a dated copy of the old settings file.</p>
+<h3 id="7-open-the-control-app-and-check-it">7. Open the control app and check it</h3>
+<ol>
+<li>Double-click <strong>Homelab Control Center</strong> on the desktop. A window titled <code>Homelab - laptop</code> (or <code>desktop</code>) opens.</li>
+<li>Click <strong>Refresh model list</strong>.</li>
+<li>A box titled <strong>HP login token</strong> asks you to paste the HP token. Paste it and click <strong>Connect</strong>.</li>
+</ol>
+<p><strong>You should see:</strong> your GGUF models listed with their sizes. If the list is empty, you have not downloaded a model yet. See <a href="../DAILY-USE.html#download-a-model">Daily use</a>.</p>
+<p>The app keeps the token in memory only until you close it. Use <strong>Change HP token</strong> to enter a different one. To show the token again, run <code>sudo cat /etc/homelab/app-token</code> on the HP.</p>
+<h3 id="what-the-control-app-does">What the control app does</h3>
+<table>
+<thead>
+<tr>
+<th>Button</th>
+<th>What it does</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>HP model library</strong></td>
+<td>Opens the HP web page.</td>
+</tr>
+<tr>
+<td><strong>Dell projects and jobs</strong></td>
+<td>Opens the Dell web page.</td>
+</tr>
+<tr>
+<td><strong>Open Models share</strong></td>
+<td>Opens <code>\\HP_IP\Models</code> in Explorer.</td>
+</tr>
+<tr>
+<td><strong>Setup guide</strong></td>
+<td>Opens this guide on GitHub.</td>
+</tr>
+<tr>
+<td><strong>Refresh model list</strong></td>
+<td>Lists the GGUF files on the HP. Asks for the HP token.</td>
+</tr>
+<tr>
+<td><strong>Link selected model from NAS</strong></td>
+<td><em>Laptop only.</em> Makes a link to the chosen model in <code>C:\AI\models</code>. The model stays on the HP.</td>
+</tr>
+<tr>
+<td><strong>Load selected model</strong></td>
+<td><em>Laptop only.</em> Asks your existing local Switchboard to load the linked model. It first asks you to confirm, because it may replace the model that is loaded now. Switchboard keeps its own safety checks.</td>
+</tr>
+<tr>
+<td><strong>Steam drive: status</strong></td>
+<td>Shows who owns the Steam drive.</td>
+</tr>
+<tr>
+<td><strong>Attach game drive here</strong></td>
+<td>Attaches the Steam drive to this PC.</td>
+</tr>
+<tr>
+<td><strong>Release game drive</strong></td>
+<td>Releases the Steam drive so the other PC can attach it.</td>
+</tr>
+</tbody>
+</table>
+<p>Link and the three Steam buttons open a command window and ask Windows for administrator rights. Read the result in that window. The <strong>desktop</strong> has the model buttons turned off. It uses its own local Ollama setup.</p>
+<p>The Steam buttons use the local <code>client\game-drive\game-client.json</code> from step 5. If it is missing they say to finish the one-time Steam setup first. The app does not do anything beyond the list above.</p>
+<h2 id="update-later">Update later</h2>
+<pre><code class="language-powershell">Set-Location .\homelab-stack
+git pull --ff-only
+</code></pre>
+<p>Then run the step 6 install command again on that PC. It refreshes the shortcut and keeps a dated copy of the old settings. Do not commit <code>game-client.json</code> or any SSH key.</p>
+<h2 id="if-something-goes-wrong">If something goes wrong</h2>
+<table>
+<thead>
+<tr>
+<th>You see</th>
+<th>What it means</th>
+<th>What to do</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>LinkSpeed says <code>1 Gbps</code></td>
+<td>Slow cable, port or adapter.</td>
+<td>Test a short Cat6A cable. Check the switch port.</td>
+</tr>
+<tr>
+<td><code>\\HP_IP\Models</code> asks again and again for a password</td>
+<td>Wrong user or password.</td>
+<td>Use user <code>homelabshare</code>. Reset the password on the HP with <code>sudo smbpasswd homelabshare</code>.</td>
+</tr>
+<tr>
+<td><code>Install-Control-Center.ps1</code> is not found</td>
+<td>Old clone, or the file is not finished.</td>
+<td>Run <code>git pull --ff-only</code>. Check you are in the repo folder.</td>
+</tr>
+<tr>
+<td>The app says the token is wrong</td>
+<td>You pasted the Dell token.</td>
+<td>The app asks for the <strong>HP</strong> token. Use <strong>Change HP token</strong>.</td>
+</tr>
+<tr>
+<td>Link or Load is greyed out</td>
+<td>You are on the desktop.</td>
+<td>Those two buttons work on the laptop only.</td>
+</tr>
+<tr>
+<td>Load fails</td>
+<td>Switchboard is not running on the laptop, or it refused (busy, memory, recording).</td>
+<td>Start your local Switchboard. Read the message in the command window. Switchboard is expected at <code>http://127.0.0.1:8002</code>.</td>
+</tr>
+<tr>
+<td>The app cannot reach a server</td>
+<td>The server is off, or the address is wrong.</td>
+<td>Open <code>http://HP_IP:8088/</code> in a browser. A Dell that is off is normal.</td>
+</tr>
+<tr>
+<td>Steam buttons fail</td>
+<td>The Steam settings are missing or wrong.</td>
+<td>Finish <a href="../INSTALL.html#10-set-up-the-exclusive-steam-drive">INSTALL.md step 10</a>. See the <a href="../GAME-DRIVE.html">game drive guide</a>.</td>
+</tr>
+<tr>
+<td>PowerShell blocks the script</td>
+<td>Execution policy.</td>
+<td>Keep <code>-ExecutionPolicy Bypass</code> in the command as shown.</td>
+</tr>
+</tbody>
+</table>
+<p>Back to the <a href="../guide.html">start guide</a>.</p><footer>Built from the Markdown guide in Noxy-HNR/homelab-stack. Example screenshots use local test data; the physical server checks happen during setup.</footer></main><script src="../assets/guide.js"></script></body></html>

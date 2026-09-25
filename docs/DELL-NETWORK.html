@@ -1,0 +1,99 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Dell R710: four onboard copper ports · Homelab</title><link rel="stylesheet" href="assets/guide.css"></head><body><aside><strong>Homelab</strong><p>Your setup guide.<br>One machine at a time.</p><a href="guide.html">Start here</a><a href="INSTALL.html">1 · Hardware & Ubuntu</a><a href="setup/HP.html">2 · HP NAS</a><a href="setup/DELL.html">3 · Dell workbench</a><a href="setup/WINDOWS.html">4 · Windows PCs</a><a href="GAME-DRIVE.html">5 · Steam drive</a><a href="DAILY-USE.html">Use your homelab</a><a href="PARTS.html">Parts to buy</a><a href="VALIDATION.html">What is tested</a></aside><main><div class="topbar"><span>INSTALL · USE · RECOVER</span><button id="print">Print this page</button></div><h1 id="dell-r710-four-onboard-copper-ports">Dell R710: four onboard copper ports</h1>
+<p>The Dell uses its four built-in <strong>1 GbE RJ45</strong> ports. Run four short copper
+patch leads to four separate Cisco 3850-24XS ports containing compatible
+<strong>1 GbE RJ45 SFP</strong> modules. All four Cisco ports must be on the same switch
+or switch stack, in the same LAN VLAN and in one <strong>LACP EtherChannel</strong>. The
+Dell uses a matching Ubuntu <strong>802.3ad bond</strong>. No Dell PCIe network card is
+needed.</p>
+<p>This is a one-time <strong>local-console</strong> setup: changing the Dell's live network
+connection will interrupt SSH. First install Ubuntu on the Dell with one
+working onboard port, then work at the Dell keyboard/monitor or iDRAC console
+and the Cisco console. Record the current Dell address and the network details:</p>
+<pre><code class="language-bash">ip -br link
+ip -br address
+ip route
+sudo netplan get
+ls -l /etc/netplan/
+</code></pre>
+<p>Identify the four <strong>actual</strong> interface names and their RJ45 labels. The
+example <code>eno1</code> through <code>eno4</code> below is only a pattern; replace it if Ubuntu
+reports different names. If the current Dell address is a router DHCP
+reservation, plan to reserve the <strong>bond0 MAC</strong> after the bond is up because
+it may differ from the address your router sees now.</p>
+<h2 id="cisco-side">Cisco side</h2>
+<p>Use the <a href="../switch/candidate.txt">Cisco command template</a>. It shows
+example ports <code>TenGigabitEthernet1/0/4</code> through <code>1/0/7</code> and port-channel 10.
+Confirm all four ports and channel 10 are unused; substitute the real switch
+member, four port IDs, LAN VLAN and free channel number. Configure the four
+member ports as access ports in that same VLAN with <code>channel-group ... mode
+active</code>. Keep the Cisco console available while configuring Ubuntu.</p>
+<p>The 3850's 24 front sockets are SFP+ form factor and support 1 GbE with
+compatible <strong>1 GbE</strong> SFP transceivers. Do not count on a 10GBASE-T SFP+
+module running at 1 GbE. Confirm each copper module's compatibility with
+the switch and its installed IOS XE version before wiring.</p>
+<h2 id="ubuntu-side">Ubuntu side</h2>
+<p>Back up the actual Netplan files that currently configure the Dell LAN:</p>
+<pre><code class="language-bash">sudo mkdir -p /root/homelab-netplan-before
+sudo cp -a /etc/netplan/. /root/homelab-netplan-before/
+</code></pre>
+<p>Edit that file so the <strong>four physical NICs have no IP configuration</strong> and
+the address belongs to <code>bond0</code>. Here is a DHCP example; replace the four
+interface names with the names you recorded:</p>
+<pre><code class="language-yaml">network:
+  version: 2
+  renderer: networkd
+  ethernets:
+    eno1: {dhcp4: false, dhcp6: false}
+    eno2: {dhcp4: false, dhcp6: false}
+    eno3: {dhcp4: false, dhcp6: false}
+    eno4: {dhcp4: false, dhcp6: false}
+  bonds:
+    bond0:
+      interfaces: [eno1, eno2, eno3, eno4]
+      dhcp4: true
+      dhcp6: false
+      parameters:
+        mode: 802.3ad
+        lacp-rate: fast
+        mii-monitor-interval: 100
+        transmit-hash-policy: layer3+4
+</code></pre>
+<p>If the Dell uses a <strong>static address</strong>, put its real <code>addresses</code>, <code>routes</code>
+and <code>nameservers</code> under <code>bond0</code> instead of <code>dhcp4: true</code>. Remove those
+settings from the physical NIC entries. Preserve any other required
+network settings from the installed configuration. Do not leave a second
+Netplan YAML file that assigns the same address to a member NIC.</p>
+<p>Check syntax and apply from the <strong>Dell local console</strong>:</p>
+<pre><code class="language-bash">sudo netplan generate
+sudo netplan apply
+</code></pre>
+<p>Do not rely on <code>netplan try</code> as an automatic rollback for this bond; its
+rollback behavior for virtual devices and custom bond settings is not a safe
+recovery plan. Confirm at the local console that <code>bond0</code> has a LAN address
+and reaches the router and HP. If it does not, restore the backed-up YAML
+from the Dell console, then apply it:</p>
+<pre><code class="language-bash">sudo cp -a /root/homelab-netplan-before/. /etc/netplan/
+sudo netplan generate
+sudo netplan apply
+</code></pre>
+<p>If you created a new Netplan file instead of editing the existing one, remove
+that new file before applying the backup. From the Cisco console, remove the
+four ports from the new channel-group and restore their original settings
+using the interface configurations you recorded before this change.
+Then inspect both ends:</p>
+<pre><code class="language-bash">ip -br address show bond0
+cat /proc/net/bonding/bond0
+ip route
+</code></pre>
+<p>On Cisco, run <code>show etherchannel summary</code>, <code>show lacp neighbor</code>, and
+<code>show interfaces status</code>. The port-channel should be in use and all four
+members should be bundled; the members should each negotiate <strong>1 Gb/s</strong>.
+Use the Dell's final LAN IP for <code>dell/deploy.sh install</code> and for the
+HP dashboard.</p>
+<p>This gives up to <strong>4 Gb/s total across different conversations</strong> when the
+traffic hashes across members. One ordinary file transfer stays on one
+1 Gb/s member. Cisco's load-balance method is switch-wide, so inspect
+<code>show etherchannel load-balance</code> before changing it for this bond.</p>
+<p><a href="https://i.dell.com/sites/doccontent/business/solutions/engineering-docs/en/Documents/server-poweredge-r710-tech-guidebook.pdf">Dell R710 onboard NIC specifications</a>,
+<a href="https://www.cisco.com/c/en/us/td/docs/switches/lan/catalyst3850/software/release/16-6/configuration_guide/b_166_lyr2_lyr3_3850_cg/m-165-layer2-etherchanl-cg.html">Cisco 3850 EtherChannel configuration</a>,
+<a href="https://netplan.readthedocs.io/en/stable/netplan-yaml/">Netplan bond settings</a>.</p><footer>Built from the Markdown guide in Noxy-HNR/homelab-stack. Example screenshots use local test data; the physical server checks happen during setup.</footer></main><script src="assets/guide.js"></script></body></html>

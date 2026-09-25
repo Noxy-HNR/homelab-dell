@@ -1,0 +1,117 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Server measurements and backups · Homelab</title><link rel="stylesheet" href="../assets/guide.css"></head><body><aside><strong>Homelab</strong><p>Your setup guide.<br>One machine at a time.</p><a href="../guide.html">Start here</a><a href="../INSTALL.html">1 · Hardware & Ubuntu</a><a href="../setup/HP.html">2 · HP NAS</a><a href="../setup/DELL.html">3 · Dell workbench</a><a href="../setup/WINDOWS.html">4 · Windows PCs</a><a href="../GAME-DRIVE.html">5 · Steam drive</a><a href="../DAILY-USE.html">Use your homelab</a><a href="../PARTS.html">Parts to buy</a><a href="../VALIDATION.html">What is tested</a></aside><main><div class="topbar"><span>INSTALL · USE · RECOVER</span><button id="print">Print this page</button></div><h1 id="server-measurements-and-backups">Server measurements and backups</h1>
+<p>The dashboard shows real measurements from each server: CPU use, memory, disk space, network byte counters, link speed when the operating system reports it, and disk activity. It keeps up to one hour of five-second samples in the server state directory. A service restart keeps that history. This is host information; it does not claim to show Cisco switch counters.</p>
+<p>The backup page can run backups, list saved snapshots, check all stored data, and restore a selected snapshot into a new folder. Jobs have a time limit, a Cancel button, and a saved log. A restart marks an unfinished task <strong>interrupted</strong>. A green result means restic completed that operation; a server with no plan says <strong>no backup plan</strong>.</p>
+<h2 id="pick-a-backup-destination">Pick a backup destination</h2>
+<ul>
+<li>Use an existing separate mounted filesystem, such as a USB backup disk, <strong>or</strong> an SFTP directory on another server.</li>
+<li>Choose source folders containing things you cannot download again: projects, configuration exports, notes, and saves.</li>
+<li>The <code>homelab</code> account needs read permission on those source folders. Do not give it permission to all of <code>/root</code> or your whole home directory merely to bypass a failed backup.</li>
+<li>The script does not erase, partition, format, or mount a drive.</li>
+<li>A copy on the same RAID0 array does not protect you if that array fails. The local helper refuses a destination on the source filesystem. For SFTP, choose storage on the other server or an independent backup system.</li>
+</ul>
+<h2 id="easiest-local-setup">Easiest local setup</h2>
+<p>This example assumes an existing separate backup filesystem is mounted at <code>/mnt/backup</code>. Dell project sources live in <code>/srv/homelab-projects</code>. Change the mount only if your disk is mounted elsewhere.</p>
+<pre><code class="language-bash">cd ~/homelab-stack
+sudo bash services/configure-backup.sh \
+  --id projects \
+  --source /srv/homelab-projects \
+  --mount /mnt/backup \
+  --repository /mnt/backup/dell-projects
+</code></pre>
+<p>The helper generates a password, initializes the encrypted repository as the <code>homelab</code> service account, and creates a protected plan. It refuses to replace an existing plan or repository. It prints the password file location without printing the password. Store a protected copy of that file away from this server; losing it prevents restores.</p>
+<p>Open the dashboard, choose <strong>Backups</strong>, select <strong>projects</strong>, and click <strong>Back up now</strong>. When it finishes, click <strong>Check</strong>. Then select a snapshot and click <strong>Restore a copy</strong>. Restore writes to a newly created folder under <code>/var/lib/homelab-app/restores/</code>; it never writes over the source files. Open the task to find its exact restore folder and inspect the restored files before treating the backup as proven.</p>
+<p>To connect an existing repository, add <code>--existing --password-file /absolute/path/to/its-password</code>. That password file must be root-owned, readable by group <code>homelab</code>, and mode <code>0640</code>. The repository must be readable and writable by <code>homelab</code>.</p>
+<h2 id="back-up-to-the-other-server-over-ssh">Back up to the other server over SSH</h2>
+<p>This needs one manual SSH setup because only you can confirm the destination and its host identity. The example backs up Dell projects to the HP. Replace <code>HP_IP</code> with its address.</p>
+<p>On the <strong>HP</strong>, create a separate destination account and directory:</p>
+<pre><code class="language-bash">sudo adduser --disabled-password --gecos '' backup
+sudo install -d -m 700 -o backup -g backup /home/backup/.ssh
+sudo install -d -m 700 -o backup -g backup /srv/bulk/backups/dell
+</code></pre>
+<p>On the <strong>Dell</strong>, make a key used only for backups:</p>
+<pre><code class="language-bash">sudo install -d -m 750 -o root -g homelab /etc/homelab/app-config/secrets
+sudo ssh-keygen -t ed25519 -N '' -f /etc/homelab/app-config/secrets/backup_ed25519
+sudo chown root:homelab /etc/homelab/app-config/secrets/backup_ed25519
+sudo chmod 640 /etc/homelab/app-config/secrets/backup_ed25519
+sudo cat /etc/homelab/app-config/secrets/backup_ed25519.pub
+</code></pre>
+<p>Copy that one public-key line into <code>/home/backup/.ssh/authorized_keys</code> on the HP, using <code>sudo nano</code>. Prefix it with <code>restrict,command="internal-sftp"</code> (including the trailing space) so the key can use SFTP without a normal shell. Then set its owner and permissions:</p>
+<pre><code class="language-bash">sudo chown backup:backup /home/backup/.ssh/authorized_keys
+sudo chmod 600 /home/backup/.ssh/authorized_keys
+sudo ssh-keygen -lf /etc/ssh/ssh_host_ed25519_key.pub
+</code></pre>
+<p>The last command prints the HP host fingerprint. Keep it visible. On the Dell, fetch the public host key and compare the fingerprint before trusting it:</p>
+<pre><code class="language-bash">ssh-keyscan -t ed25519 HP_IP &gt; /tmp/hp-backup-known-hosts
+ssh-keygen -lf /tmp/hp-backup-known-hosts
+</code></pre>
+<p>Only after the fingerprints match, install the host key and test the connection:</p>
+<pre><code class="language-bash">sudo install -m 640 -o root -g homelab /tmp/hp-backup-known-hosts /etc/homelab/app-config/secrets/known_hosts
+sudo -u homelab sftp \
+  -i /etc/homelab/app-config/secrets/backup_ed25519 \
+  -o IdentitiesOnly=yes -o StrictHostKeyChecking=yes \
+  -o UserKnownHostsFile=/etc/homelab/app-config/secrets/known_hosts \
+  backup@HP_IP
+</code></pre>
+<p>At the <code>sftp&gt;</code> prompt, run <code>ls /srv/bulk/backups/dell</code>, then <code>exit</code>. Create the plan on the Dell:</p>
+<pre><code class="language-bash">cd ~/homelab-stack
+sudo bash services/configure-backup.sh \
+  --id projects-to-hp \
+  --source /srv/homelab-projects \
+  --repository sftp:backup@HP_IP:/srv/bulk/backups/dell \
+  --ssh-key /etc/homelab/app-config/secrets/backup_ed25519 \
+  --known-hosts /etc/homelab/app-config/secrets/known_hosts
+</code></pre>
+<p>The default task limit is six hours. Use <code>--timeout</code> to choose 60–86400 seconds when creating a plan. Only a local administrator can edit plans under <code>/etc/homelab/app-config/backups</code>; the web API cannot change the backup destination or submit commands. Run backups while source applications are quiet when their files need a consistent point-in-time copy. For active databases, export a database dump first and include the dump directory.</p>
+<h2 id="schedules-and-retention">Schedules and retention</h2>
+<p>No schedule is enabled automatically. After a successful backup, Check, and test restore, install a daily or weekly timer with the included helper:</p>
+<pre><code class="language-bash">sudo bash services/schedule-backup.sh projects daily
+sudo systemctl list-timers 'homelab-backup-*'
+</code></pre>
+<p>Substitute your actual plan ID. The timer calls the authenticated local app as the <code>homelab</code> account and records failures in <code>journalctl -u homelab-backup-projects.service</code>. It starts a missed run after boot. Disable it with <code>sudo systemctl disable --now homelab-backup-projects.timer</code>. Retention and pruning remain explicit administrator tasks so the web app cannot erase recovery history.</p>
+<h2 id="api-reference">API reference</h2>
+<p>All routes are under <code>/api</code> and require the normal login. Both servers expose them.</p>
+<table>
+<thead>
+<tr>
+<th>Route</th>
+<th>Result</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>GET /metrics</code></td>
+<td><code>{host, current, history}</code>. <code>current</code> has <code>cpu_percent</code>, <code>memory</code>, <code>load_average</code>, <code>disks</code>, <code>network</code> (cumulative counters, <code>is_up</code>, <code>speed_mbps</code> or null), <code>disk_io</code>. <code>history</code> holds up to 720 samples.</td>
+</tr>
+<tr>
+<td><code>GET /backups</code></td>
+<td><code>{available, plans, tasks}</code>. <code>available</code> is false when restic is missing. An empty <code>plans</code> list means <strong>no backup plan</strong>. Each plan has <code>configured</code>, <code>error</code>, and <code>last_backup</code> (<code>null</code> until a backup task finishes, then its <code>id</code>, <code>state</code>, <code>finished_at</code>). Task summaries omit logs.</td>
+</tr>
+<tr>
+<td><code>GET /backups/{plan_id}/snapshots</code></td>
+<td><code>{items: [{id, short_id, time, hostname, paths}]}</code></td>
+</tr>
+<tr>
+<td><code>POST /backups/run</code>, <code>POST /backups/check</code></td>
+<td>Body <code>{plan_id}</code>. Returns the new task with status 202.</td>
+</tr>
+<tr>
+<td><code>POST /backups/restore</code></td>
+<td>Body <code>{plan_id, snapshot_id}</code>. <code>snapshot_id</code> must be 8–64 hex characters; <code>latest</code> is not accepted. <code>restore_path</code> is a new folder under <code>state_dir/restores</code>.</td>
+</tr>
+<tr>
+<td><code>GET /backups/tasks/{id}</code></td>
+<td>Task with <code>state</code> (<code>queued</code>, <code>running</code>, <code>succeeded</code>, <code>failed</code>, <code>cancelled</code>, <code>interrupted</code>), <code>exit_code</code>, <code>error</code>, <code>restore_path</code>, and the last 64 KiB of <code>log</code>.</td>
+</tr>
+<tr>
+<td><code>POST /backups/tasks/{id}/cancel</code></td>
+<td>Requests cancellation and returns the task.</td>
+</tr>
+</tbody>
+</table>
+<p>Errors: 400 for an invalid or unconfigured plan, 404 for an unknown task, 409 when another backup operation is running (one at a time per server), 504 when listing snapshots takes over 30 seconds. The password is passed to restic only as <code>RESTIC_PASSWORD_FILE</code>; it never appears in commands, logs, or responses. Inherited <code>RESTIC_*</code> variables are removed.</p>
+<p>A task still running when the service stops is marked <strong>interrupted</strong>, never cancelled or succeeded. After an interrupted or cancelled job, restic may leave a stale lock. Check that no job is running, then run <code>sudo -u homelab restic --repo &lt;repository&gt; --password-file &lt;password file&gt; unlock</code> once.</p>
+<p>SFTP plans require the user and host to start with a letter or digit, and key and known-hosts paths may contain only letters, digits, and <code>_ . / @ + = , -</code> (no spaces or quotes).</p>
+<p>Tests: <code>PYTHONPATH=services .venv/Scripts/python.exe -m pytest services/tests/test_operations.py</code> (on Linux use <code>.venv/bin/python</code>). They use temporary folders and a fake restic script. They never touch real backups.</p>
+<h2 id="optional-cisco-port-counters">Optional Cisco port counters</h2>
+<p>Host metrics work immediately after installation. Cisco port counters require a separately configured SNMP exporter and read-only SNMP credentials on the real switch. We do not enable guessed SNMP settings. The supported path is <a href="https://github.com/prometheus/snmp_exporter">Prometheus SNMP exporter</a> using SNMPv3 authentication and privacy, limited to the metrics host. Until configured, the app has no Cisco traffic figures. Verify port IDs against the actual switch interface list before labeling charts.</p>
+<p>Restic's <a href="https://restic.readthedocs.io/en/stable/030_preparing_a_new_repo.html">repository setup guide</a> describes local and SFTP repositories. Its <a href="https://restic.readthedocs.io/en/stable/050_restore.html">restore guide</a> explains restoring selected snapshots.</p><footer>Built from the Markdown guide in Noxy-HNR/homelab-stack. Example screenshots use local test data; the physical server checks happen during setup.</footer></main><script src="../assets/guide.js"></script></body></html>

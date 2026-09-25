@@ -1,0 +1,95 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Developer workbench and MCP tools (Dell) · Homelab</title><link rel="stylesheet" href="../assets/guide.css"></head><body><aside><strong>Homelab</strong><p>Your setup guide.<br>One machine at a time.</p><a href="../guide.html">Start here</a><a href="../INSTALL.html">1 · Hardware & Ubuntu</a><a href="../setup/HP.html">2 · HP NAS</a><a href="../setup/DELL.html">3 · Dell workbench</a><a href="../setup/WINDOWS.html">4 · Windows PCs</a><a href="../GAME-DRIVE.html">5 · Steam drive</a><a href="../DAILY-USE.html">Use your homelab</a><a href="../PARTS.html">Parts to buy</a><a href="../VALIDATION.html">What is tested</a></aside><main><div class="topbar"><span>INSTALL · USE · RECOVER</span><button id="print">Print this page</button></div><h1 id="developer-workbench-and-mcp-tools-dell">Developer workbench and MCP tools (Dell)</h1>
+<p>The Dell workbench keeps Python projects in <code>projects_dir</code>. It runs named jobs (tests or compile checks), searches project text, and shows files. An AI client can use the same features through MCP tools on the Dell.</p>
+<h2 id="projects">Projects</h2>
+<ul>
+<li><strong>Python template:</strong> creates <code>app.py</code>, <code>tests/test_app.py</code>, <code>README.md</code>, <code>.gitignore</code>, and <code>pyproject.toml</code>. Its test job passes right away.</li>
+<li><strong>GitHub import:</strong> accepts exactly <code>https://github.com/OWNER/REPOSITORY</code> (optionally ending in <code>.git</code>). URLs containing credentials, ports, extra paths, queries, SSH, or other hosts are refused. The clone is shallow, without submodules or hooks, with file and ext protocols disabled, no password prompt, and a 90-second limit. A repository containing symbolic links, or more than 50,000 entries, is refused and removed. Private repositories are not supported.</li>
+<li>Names use lowercase letters, digits, and hyphens (48 characters maximum). An existing folder is never adopted or overwritten.</li>
+</ul>
+<h2 id="jobs">Jobs</h2>
+<p>A job is a named preset. It is never a command typed into the API. The built-in presets are:</p>
+<table>
+<thead>
+<tr>
+<th>Preset</th>
+<th>Runs</th>
+<th>Limit</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>test</code></td>
+<td><code>python -m unittest discover -s tests</code></td>
+<td>15 min</td>
+</tr>
+<tr>
+<td><code>compile</code></td>
+<td><code>python -m compileall -q .</code></td>
+<td>15 min</td>
+</tr>
+</tbody>
+</table>
+<p>A local administrator can add presets in a root-owned, not group/world-writable <code>config_dir/workbench.json</code>:</p>
+<pre><code class="language-json">{&quot;presets&quot;: {&quot;lint&quot;: {&quot;args&quot;: [&quot;-m&quot;, &quot;compileall&quot;, &quot;-q&quot;, &quot;src&quot;], &quot;timeout_seconds&quot;: 600}}}
+</code></pre>
+<p><code>args</code> are arguments to the service's Python only (at most 32). The limit is 1–3600 seconds. Jobs run one at a time, in the project folder, as the <code>homelab</code> service account. They get a minimal environment (<code>PATH</code>, locale, and temp variables only). Up to 20 jobs can wait in the queue. Output keeps the last 128 KiB and says <code>log_truncated: true</code> when older lines were dropped.</p>
+<p>States: <code>queued</code>, <code>running</code>, <code>succeeded</code>, <code>failed</code>, <code>cancelled</code>, <code>timed_out</code>, <code>interrupted</code>. Cancel stops the whole process group. A service restart marks a running job <strong>interrupted</strong> and continues with the queued ones.</p>
+<p><strong>Jobs execute the project's own code.</strong> Only run projects you trust. A job runs as the same account as the web service, so it could read what that account can read.</p>
+<h2 id="search-and-file-view">Search and file view</h2>
+<p><strong>Reindex</strong> reads UTF-8 text files up to 256 KiB each, at most 2,000 files per project. It skips <code>.git</code>, virtual environments, <code>node_modules</code>, build and cache folders, symbolic links, binary files, and credential-like names (<code>.env*</code>, <code>*.pem</code>, <code>*.key</code>, <code>id_rsa*</code>, <code>credentials.*</code>, <code>secrets.*</code>). Search treats your text as a phrase, not query syntax. Results are checked again at search time, so a deleted file or one replaced by a symbolic link disappears even before the next reindex. File reads use the same rules. Paths must be relative, use forward slashes, stay inside the project, and cannot pass through a symbolic link.</p>
+<h2 id="api-reference">API reference</h2>
+<p>All routes are under <code>/api</code>, need the normal login, and exist only on the Dell.</p>
+<table>
+<thead>
+<tr>
+<th>Route</th>
+<th>Result</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>GET /projects</code></td>
+<td><code>{items: [{id, name, source, created_at, presets}]}</code></td>
+</tr>
+<tr>
+<td><code>POST /projects</code></td>
+<td>Body <code>{name, template: "python"}</code> or <code>{name, git_url}</code>. 201 with the project.</td>
+</tr>
+<tr>
+<td><code>GET /jobs</code></td>
+<td><code>{items}</code>: the 100 most recent, newest first.</td>
+</tr>
+<tr>
+<td><code>POST /jobs</code></td>
+<td>Body <code>{project_id, preset}</code>. 202 with the job.</td>
+</tr>
+<tr>
+<td><code>GET /jobs/{id}</code></td>
+<td><code>{id, project_id, preset, state, exit_code, log, log_truncated, created_at, started_at, finished_at, timeout_seconds}</code></td>
+</tr>
+<tr>
+<td><code>POST /jobs/{id}/cancel</code></td>
+<td>Cancels a queued or running job. Finished jobs are returned unchanged.</td>
+</tr>
+<tr>
+<td><code>GET /search?q=&amp;project_id=</code></td>
+<td><code>{items: [{project_id, path, snippet}]}</code>, at most 30.</td>
+</tr>
+<tr>
+<td><code>POST /search/reindex</code></td>
+<td>Body <code>{project_id?}</code> → <code>{indexed_files, skipped_files}</code></td>
+</tr>
+<tr>
+<td><code>GET /files?project_id=&amp;path=</code></td>
+<td><code>{project_id, path, content, truncated}</code></td>
+</tr>
+</tbody>
+</table>
+<p>Errors: 400 for bad names, URLs, paths, or presets. 403 for excluded or credential paths, or for GitHub import when <code>allow_network_downloads</code> is false. 404 for missing items. 409 for a name in use or a project folder that is missing or linked. 413 for oversized files or trees. 415 for binary or non-UTF-8 files. 429 when the queue is full. 503 or 504 when Git is missing or times out.</p>
+<h2 id="mcp-tools">MCP tools</h2>
+<p>The <code>homelab-mcp</code> service runs Streamable HTTP at <code>http://127.0.0.1:8765/mcp</code> on the Dell. It is loopback only; reach it through the SSH tunnel in <a href="../setup/DELL.html">DELL.md</a>. Every request needs <code>Authorization: Bearer &lt;Dell token&gt;</code>. The tools call the workbench API above with that token. There is no shell or file-writing tool.</p>
+<p>Tools: <code>list_projects</code>, <code>search_project_text</code>, <code>read_project_file</code>, <code>list_jobs</code>, <code>get_job</code>, <code>start_project_job</code>, <code>run_project_tests</code>, <code>compile_project</code>, <code>cancel_job</code>, <code>reindex_projects</code>. Upstream error bodies are replaced by a short message with the HTTP status, so paths and tokens do not reach the AI client. Requests with a non-local <code>Host</code> header are refused.</p>
+<h2 id="tests">Tests</h2>
+<pre><code>PYTHONPATH=services .venv/Scripts/python.exe -m pytest services/tests/test_workbench.py services/tests/test_mcp.py
+</code></pre>
+<p>They create template projects in temporary folders and run real <code>python</code> subprocess jobs (test, compile, cancel, timeout, restart). GitHub cloning is mocked; the tests check the hardened <code>git</code> arguments but do not reach GitHub. The MCP tests use a mocked upstream, the real workbench router over an in-process transport, and a real Uvicorn MCP server on a random loopback port.</p><footer>Built from the Markdown guide in Noxy-HNR/homelab-stack. Example screenshots use local test data; the physical server checks happen during setup.</footer></main><script src="../assets/guide.js"></script></body></html>

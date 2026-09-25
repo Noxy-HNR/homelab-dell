@@ -1,0 +1,1 @@
+document.getElementById('print').onclick=()=>window.print();document.querySelectorAll('pre').forEach(p=>{const b=document.createElement('button');b.textContent='Copy';b.onclick=async()=>{try{await navigator.clipboard.writeText(p.querySelector('code').textContent);b.textContent='Copied';}catch{b.textContent='Select and copy';}};p.appendChild(b);});

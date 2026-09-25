@@ -7,7 +7,9 @@ untouched. Steam iSCSI attachment is handled by client\game-drive\GameDrive.ps1 
 [CmdletBinding()]
 param(
     [ValidateSet('Plan', 'InstallTools', 'Verify')]
-    [string]$Action = 'Plan'
+    [string]$Action = 'Plan',
+    [string]$HpIp = '',
+    [string]$DellIp = ''
 )
 
 Set-StrictMode -Version Latest
@@ -51,6 +53,11 @@ switch ($Action) {
         }
         Write-Host 'Tools installed or already present. Restart the terminal to pick up PATH changes.'
         Write-Host 'Existing native llama.cpp and C:\AI remain unchanged.'
+        if ($HpIp -and $DellIp) {
+            & (Join-Path (Split-Path -Parent $PSScriptRoot) 'client\Install-Control-Center.ps1') -Role laptop -HpIp $HpIp -DellIp $DellIp
+        } else {
+            Write-Host 'Next run client\Install-Control-Center.ps1 -Role laptop -HpIp HP_IP -DellIp DELL_IP to create the desktop app shortcut.'
+        }
     }
     'Verify' {
         Get-NetAdapter | Select-Object Name, Status, LinkSpeed | Format-Table | Out-Host

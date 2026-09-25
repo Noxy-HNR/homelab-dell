@@ -1,0 +1,41 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Parts to buy for this version · Homelab</title><link rel="stylesheet" href="assets/guide.css"></head><body><aside><strong>Homelab</strong><p>Your setup guide.<br>One machine at a time.</p><a href="guide.html">Start here</a><a href="INSTALL.html">1 · Hardware & Ubuntu</a><a href="setup/HP.html">2 · HP NAS</a><a href="setup/DELL.html">3 · Dell workbench</a><a href="setup/WINDOWS.html">4 · Windows PCs</a><a href="GAME-DRIVE.html">5 · Steam drive</a><a href="DAILY-USE.html">Use your homelab</a><a href="PARTS.html">Parts to buy</a><a href="VALIDATION.html">What is tested</a></aside><main><div class="topbar"><span>INSTALL · USE · RECOVER</span><button id="print">Print this page</button></div><h1 id="parts-to-buy-for-this-version">Parts to buy for this version</h1>
+<p>The hardware budget is <strong>under $300 total delivered</strong>. These are spending caps, not an order or guaranteed checkout prices. Measure the two room cable paths and check what the HP already has before buying.</p>
+<table>
+<thead>
+<tr>
+<th>Needed part</th>
+<th style="text-align: right;">Target delivered cap</th>
+<th>Why</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Used HPE 560FLR-SFP+ 10G dual-port FlexibleLOM NIC, if HP lacks suitable 10G</td>
+<td style="text-align: right;">$20</td>
+<td>HP to Cisco over owned short fiber</td>
+</tr>
+<tr>
+<td>Used genuine Intel X540-T1 single-port 10GBASE-T RJ45 PCIe x8, correct desktop bracket</td>
+<td style="text-align: right;">$40</td>
+<td>Replaces the mistaken assumption about the ImageStream card</td>
+</tr>
+<tr>
+<td>Windows-compatible USB4/Thunderbolt 10GBASE-T RJ45 adapter</td>
+<td style="text-align: right;">$130</td>
+<td>Laptop 10G port</td>
+</tr>
+<tr>
+<td>Two pure-copper Cat6A room runs of measured lengths</td>
+<td style="text-align: right;">$100</td>
+<td>One separate rack-to-room run per PC</td>
+</tr>
+<tr>
+<td><strong>Total target cap</strong></td>
+<td style="text-align: right;"><strong>$290</strong></td>
+<td>Leaves $10 for price variation; checkout must stay below $300</td>
+</tr>
+</tbody>
+</table>
+<p>The <a href="https://sabrent.com/products/nt-p10g">Sabrent NT-P10G</a> is a documented laptop adapter (manufacturer price was $129.99 before tax); this <a href="https://www.centralcomputer.com/usb4-to-10g-ethernet-network-adapter-black.html">USB4 retailer example</a> was listed at $99.95 before checkout. A <a href="https://www.ebay.com/itm/127787955314">used X540-T1 example</a> was listed at $39.99 with free shipping before tax. A <a href="https://www.ebay.com/itm/188280947795">used HPE 560FLR-SFP+ example</a> was near $20. A <a href="https://www.monoprice.com/Product?p_id=45436">75 ft pure-copper Cat6A example</a> was $20.99 each before shipping and tax. These listings can change or sell out, and 75 ft works only if it actually reaches with slack.</p>
+<p><strong>Check before checkout:</strong> the HP's FlexibleLOM socket and current adapter, desktop full-height or low-profile bracket, Windows drivers, both actual cable routes, the switch's copper module compatibility, and the final tax/shipping total. Cisco's published SFP-10G-T-X 10G reach is <a href="https://www.cisco.com/c/en/us/products/collateral/interfaces-modules/transceiver-modules/data_sheet_c78-455693.html">30 m over Cat6A/Cat7</a>; do not assume a 100 ft cable meets a 30 m rating. The X540-T1 end supports <a href="https://www.intel.com/content/www/us/en/support/articles/000007404/ethernet-products.html">up to 100 m Cat6A</a>, so the switch module limits that example link.</p>
+<p><strong>Already owned and reused:</strong> Cisco 3850-24XS, matched optical modules and short rack fiber, two compatible 10G copper SFP+ switch modules, four compatible 1G copper SFP switch modules, four Cat5e Dell patch cables, six 300 GB 2.5-inch HDDs, one 512 GB SSD, 64 GB USB stick and drive trays/adapters (assumed owned). The photographed ImageStream PCIE-ETH-GIGX6 is set aside until its live PCI ID and link speed are confirmed. No Dell PCIe NIC, CPU upgrade, RAM upgrade, 40G module, or Raspberry Pi part is in this cart.</p><footer>Built from the Markdown guide in Noxy-HNR/homelab-stack. Example screenshots use local test data; the physical server checks happen during setup.</footer></main><script src="assets/guide.js"></script></body></html>

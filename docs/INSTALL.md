@@ -2,7 +2,7 @@
 
 Follow this page from top to bottom. The pictures show the **planned** cabling and drive placement. Replace example IPs and Cisco port numbers with the values you see on your own equipment. The scripts install software after the operating systems and disk arrays exist.
 
-![Rack, switch, desktop and laptop cable map](assets/cabling.svg)
+![Rack, switch, desktop and laptop cable map](assets/cabling-final.svg)
 
 ## 1. Get the parts and check the distances
 
@@ -78,86 +78,39 @@ Before installing HP services, confirm that the HP's optic is accepted and its N
 
 The repository contains scripts, examples and diagrams. It contains no passwords, private keys, model weights, ISO image or driver binaries.
 
-On each **Ubuntu server**, sign in as the ordinary Ubuntu user and run:
+On each **Ubuntu server**, sign in as the ordinary Ubuntu user. Use `homelab-hp` on the HP and `homelab-dell` on the Dell:
 
 ```bash
 sudo apt-get update
 sudo apt-get install -y git gh
 gh auth login
-gh repo clone Noxy-HNR/homelab-stack
+gh repo clone Noxy-HNR/homelab-hp homelab-stack
 cd homelab-stack
 ```
 
-For a public repo, you may replace the `gh` login and clone with `git clone https://github.com/Noxy-HNR/homelab-stack.git`. On each **Windows PC**, install Git and GitHub CLI once if missing, then clone:
+Replace `homelab-hp` with `homelab-dell` on the Dell. These are private repositories, so sign in with an account that can read them. On each **Windows PC**, install Git and GitHub CLI once if missing, then clone. Use `homelab-desktop` on the desktop and `homelab-laptop` on the laptop:
 
 ```powershell
 winget install --id Git.Git --exact
 winget install --id GitHub.cli --exact
 gh auth login
-gh repo clone Noxy-HNR/homelab-stack
+gh repo clone Noxy-HNR/homelab-desktop homelab-stack
 Set-Location .\homelab-stack
 ```
 
-Restart the Windows terminal if it does not yet find `gh` or `git`. Authenticate on each machine if the repo is private. Run the installers **from the clone** so their nearby support files are present. Use `git pull --ff-only` in the clone for later updates; do not commit the local client JSON or keys.
+Replace `homelab-desktop` with `homelab-laptop` on the laptop. Restart the Windows terminal if it does not yet find `gh` or `git`. Run the installers **from the clone** so their nearby support files are present. Use `git pull --ff-only` in the clone for later updates; do not commit the local client JSON or keys.
 
 ## 7. Install the HP software
 
-From the HP clone, replace both example addresses. The **first address must already be on the HP's 10G interface**:
-
-```bash
-sudo bash hp/deploy.sh plan 192.168.1.10 192.168.1.20
-sudo bash hp/deploy.sh install 192.168.1.10 192.168.1.20
-sudo bash hp/deploy.sh verify 192.168.1.10 192.168.1.20
-```
-
-The `plan` shows the mounted storage and intended changes. `install` checks the live 10G link, installs Samba and LIO, fully allocates the 256 GiB game image, asks you to set the Samba password, then installs Cockpit and the LAN dashboard. Leave the Steam target disabled until step 10. Open `http://HP-IP:8088/` from a PC to see the dashboard.
+Follow [the HP setup page](setup/HP.md). It installs the NAS services, model library, authenticated web app, backup tools, and live metrics. The installer prints the server login token. Open `http://HP-IP:8088/` and sign in.
 
 ## 8. Install the Dell software
 
-Finish the four-port bond first. From the Dell clone, replace the example address with the real IP on `bond0`:
+Follow [the Dell setup page](setup/DELL.md). It installs Docker, the development workbench, project jobs, file search, real MCP tools, Cockpit, and Portainer. The command needs **both** IP addresses: `sudo bash dell/deploy.sh install DELL_IP HP_IP`. Open `http://DELL-IP:8090/` and sign in with the Dell token.
 
-```bash
-sudo bash dell/deploy.sh plan 192.168.1.20
-sudo bash dell/deploy.sh install 192.168.1.20
-sudo bash dell/deploy.sh verify 192.168.1.20
-```
+## 9. Set up the Windows PCs
 
-The installer checks all four 1G bond members, installs development tools and Docker, builds a small MCP demo, and starts Cockpit and Portainer. Use `https://DELL-IP:9090/` for Cockpit and `https://DELL-IP:9443/` for Portainer. From the laptop, reach the Dell MCP demo through a local SSH tunnel:
-
-```powershell
-ssh -N -L 8765:127.0.0.1:8765 YOUR_DELL_USER@DELL-IP
-```
-
-Then configure an MCP client for `http://127.0.0.1:8765/mcp`. Your existing laptop Switchboard stays local and is not replaced.
-
-## 9. Set up the Windows PCs and model library
-
-From **elevated PowerShell** in the desktop clone:
-
-```powershell
-powershell -ExecutionPolicy Bypass -File .\desktop\install.ps1 -Action Plan
-powershell -ExecutionPolicy Bypass -File .\desktop\install.ps1 -Action Install
-# Reboot or finish the first WSL, Docker Desktop and Ollama launch if requested.
-powershell -ExecutionPolicy Bypass -File .\desktop\install.ps1 -Action PullModel
-powershell -ExecutionPolicy Bypass -File .\desktop\install.ps1 -Action Verify
-```
-
-From PowerShell in the laptop clone:
-
-```powershell
-powershell -ExecutionPolicy Bypass -File .\laptop\install.ps1 -Action Plan
-powershell -ExecutionPolicy Bypass -File .\laptop\install.ps1 -Action InstallTools
-powershell -ExecutionPolicy Bypass -File .\laptop\install.ps1 -Action Verify
-```
-
-On the laptop, open `\\HP-IP\Models` in Explorer and sign in as `homelabshare` with the password from step 7. Put **single-file GGUF models** in that share. List available models and register only the ones you want visible to the existing local stack:
-
-```powershell
-powershell -ExecutionPolicy Bypass -File .\laptop\NetworkModels.ps1 -Action Plan -Share '\\192.168.1.10\Models'
-powershell -ExecutionPolicy Bypass -File .\laptop\NetworkModels.ps1 -Action Register -Share '\\192.168.1.10\Models' -Names 'your-model.gguf'
-```
-
-The registered link uses negligible laptop disk space. The model data is read from HP over SMB when selected; inference runs on the laptop. Keep the lightweight existing model locally for when HP is off or unavailable.
+Follow [the Windows setup page](setup/WINDOWS.md). It installs the tools for each PC and the **Homelab Control Center** desktop shortcut. Use the control app to browse the HP model library, link a selected GGUF, and load it through the laptop's existing Switchboard. Steam buttons become usable after step 10 below.
 
 ## 10. Set up the exclusive Steam drive
 
@@ -197,7 +150,7 @@ On the laptop, run `-Action Attach` with its own local config. Release it before
 ## 11. Verify the finished build
 
 - HP and both PC links show **10 Gb/s**. The HP's two ext4 mounts and shares remain available after a reboot. The HP dashboard works even when the Dell is off.
-- Cisco and Dell show **four bundled 1 Gb/s LACP members**. Dell SSH, Docker Compose, MCP demo, Cockpit and Portainer work after a reboot.
+- Cisco and Dell show **four bundled 1 Gb/s LACP members**. Dell SSH, Docker Compose, the workbench and its MCP tools, Cockpit and Portainer work after a reboot.
 - The laptop opens `\\HP-IP\Models` and loads one linked GGUF from the HP while its own inference process runs. Its existing local model still works with the HP disconnected.
 - A small Steam game launches from `S:` on the desktop, then from `S:` on the laptop **after a successful release**. Each PC sees the same library, never concurrently.
 

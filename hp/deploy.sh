@@ -56,8 +56,8 @@ case $action in
     [[ $EUID -eq 0 ]] || { echo 'Run verify with sudo.' >&2; exit 2; }
     check_link
     bash "$script_dir/setup-nas.sh" --action verify "${nas_args[@]}"
-    systemctl is-active --quiet homelab-dashboard.service
+    systemctl is-active --quiet homelab-app.service
     curl --fail --silent --show-error --max-time 5 "http://$hp_ip:8088/healthz"
-    echo 'PASS: HP NAS, 10G link and dashboard'
+    echo 'PASS: HP NAS, 10G link and Homelab app'
     ;;
 esac

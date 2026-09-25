@@ -1,0 +1,62 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Model library and downloads (HP) · Homelab</title><link rel="stylesheet" href="../assets/guide.css"></head><body><aside><strong>Homelab</strong><p>Your setup guide.<br>One machine at a time.</p><a href="../guide.html">Start here</a><a href="../INSTALL.html">1 · Hardware & Ubuntu</a><a href="../setup/HP.html">2 · HP NAS</a><a href="../setup/DELL.html">3 · Dell workbench</a><a href="../setup/WINDOWS.html">4 · Windows PCs</a><a href="../GAME-DRIVE.html">5 · Steam drive</a><a href="../DAILY-USE.html">Use your homelab</a><a href="../PARTS.html">Parts to buy</a><a href="../VALIDATION.html">What is tested</a></aside><main><div class="topbar"><span>INSTALL · USE · RECOVER</span><button id="print">Print this page</button></div><h1 id="model-library-and-downloads-hp">Model library and downloads (HP)</h1>
+<p>The HP dashboard lists the GGUF model files on the NAS share and can download new GGUF files from Hugging Face. It lists only <strong>complete</strong> GGUF files. A file still being copied, cut short, or holding unknown tensor types appears under <strong>warnings</strong> with a reason instead. File size tells you how big the download is. It does <strong>not</strong> tell you whether the model fits in a PC's RAM or VRAM.</p>
+<h2 id="what-gets-listed">What gets listed</h2>
+<ul>
+<li>Files ending in <code>.gguf</code> (any capitalization) anywhere under <code>models_dir</code>, the NAS models folder.</li>
+<li>The app checks each file's GGUF v2/v3 header and confirms that every tensor's data is actually present. It reads the header only, never the model weights, and never runs the model.</li>
+<li>It skips hidden names (starting with <code>.</code>), the private <code>.homelab-downloads</code> staging folder, symbolic links, and Windows junctions.</li>
+<li>A model ID is its path relative to the NAS models folder, such as <code>qwen/model-Q4_K_M.gguf</code>. IDs that are absolute or use <code>..</code> or backslashes are refused.</li>
+<li>Split models (<code>-00001-of-00003.gguf</code>) are listed part by part. Each part reports its <code>split_index</code> and <code>split_count</code>.</li>
+</ul>
+<h2 id="downloads">Downloads</h2>
+<p>Enter the repository (<code>owner/name</code>), the file path inside it, and a revision (default <code>main</code>). You can also give a local filename. Downloads run one at a time in a persistent queue.</p>
+<ol>
+<li>The app asks Hugging Face for the file size, the exact commit, and the SHA-256 checksum when the Hub publishes one (it does for LFS files). The task stays pinned to that commit, even after a restart.</li>
+<li>It checks there is enough free space for the file plus 256 MiB.</li>
+<li>It downloads into the hidden <code>.homelab-downloads</code> folder on the same NAS filesystem. Only <code>https://</code> redirects are followed. Your Hugging Face token (from the service account's normal <code>hf</code> login, if any) goes only to <code>huggingface.co</code>, never to the redirect host.</li>
+<li>The byte count must match exactly, and so must the checksum when one exists. The file must also pass the GGUF completeness check.</li>
+<li>The app publishes the file with a hard link, which cannot replace an existing file. If a file with the same name appears meanwhile (ignoring capitalization, as SMB clients do), the download fails and your file is left untouched.</li>
+</ol>
+<p><strong>Cancel</strong> stops a queued or running download and deletes the partial file. If the service stops mid-download, the task goes back to the queue and restarts from byte zero at the saved commit. Error messages never include signed URLs, tokens, or raw network errors.</p>
+<p>A local administrator can set <code>allow_network_downloads: false</code> in <code>/etc/homelab/apps.json</code> to turn off downloads. The library listing still works.</p>
+<h2 id="api-reference">API reference</h2>
+<p>All routes are under <code>/api</code>, need the normal login, and exist only on the HP.</p>
+<table>
+<thead>
+<tr>
+<th>Route</th>
+<th>Result</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>GET /models</code>, <code>POST /models/scan</code></td>
+<td><code>{items, total_bytes, warnings}</code>. Each item: <code>id</code>, <code>name</code>, <code>size_bytes</code>, <code>modified_at</code>, <code>format: "GGUF"</code>, <code>gguf_version</code>, <code>tensor_count</code>, <code>metadata</code> (<code>name</code>, <code>architecture</code>, <code>quantization</code> = GGUF file-type number, <code>split_count</code>, <code>split_index</code>), <code>source</code> (repo, filename, commit for files this app downloaded, else null).</td>
+</tr>
+<tr>
+<td><code>GET /models/hash?model_id=</code></td>
+<td><code>{id, sha256, size_bytes}</code> for a complete GGUF. Reads the whole file.</td>
+</tr>
+<tr>
+<td><code>POST /downloads</code></td>
+<td>Body <code>{repo_id, filename, revision?, local_name?}</code>. Returns the task with status 202.</td>
+</tr>
+<tr>
+<td><code>GET /downloads</code></td>
+<td><code>{items}</code> newest first.</td>
+</tr>
+<tr>
+<td><code>GET /downloads/{id}</code></td>
+<td>Task: <code>state</code> (<code>queued</code>, <code>resolving</code>, <code>downloading</code>, <code>validating</code>, <code>completed</code>, <code>failed</code>, <code>cancelled</code>), <code>downloaded_bytes</code>, <code>total_bytes</code>, <code>progress</code>, <code>resolved_revision</code>, <code>sha256</code>, <code>model_id</code>, <code>error</code>.</td>
+</tr>
+<tr>
+<td><code>POST /downloads/{id}/cancel</code></td>
+<td>Requests cancellation. Finished tasks are returned unchanged.</td>
+</tr>
+</tbody>
+</table>
+<p>Errors: 422 for an invalid repository or filename, or unknown fields. 409 when the local name exists or is already pending (ignoring capitalization), or when history reaches 1000 entries. 403 when downloads are disabled. 503 when the NAS folder is missing or is a symbolic link (mount the storage first). 404 for an unknown task.</p>
+<h2 id="tests">Tests</h2>
+<pre><code>PYTHONPATH=services .venv/Scripts/python.exe -m pytest services/tests/test_models.py
+</code></pre>
+<p>(On Linux use <code>.venv/bin/python</code>.) The tests build tiny GGUF files in temporary folders and use a fake Hub transport plus mocked HTTP responses. They never download a real model or run inference. The Linux-only descriptor-relative staging path (<code>O_NOFOLLOW</code>, <code>dir_fd</code>, and group ownership) is exercised only on the real HP.</p><footer>Built from the Markdown guide in Noxy-HNR/homelab-stack. Example screenshots use local test data; the physical server checks happen during setup.</footer></main><script src="../assets/guide.js"></script></body></html>

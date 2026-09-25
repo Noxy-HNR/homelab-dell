@@ -1,0 +1,130 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Start here · Homelab</title><link rel="stylesheet" href="assets/guide.css"></head><body><aside><strong>Homelab</strong><p>Your setup guide.<br>One machine at a time.</p><a href="guide.html">Start here</a><a href="INSTALL.html">1 · Hardware & Ubuntu</a><a href="setup/HP.html">2 · HP NAS</a><a href="setup/DELL.html">3 · Dell workbench</a><a href="setup/WINDOWS.html">4 · Windows PCs</a><a href="GAME-DRIVE.html">5 · Steam drive</a><a href="DAILY-USE.html">Use your homelab</a><a href="PARTS.html">Parts to buy</a><a href="VALIDATION.html">What is tested</a></aside><main><div class="topbar"><span>INSTALL · USE · RECOVER</span><button id="print">Print this page</button></div><h1 id="start-here">Start here</h1>
+<p>This guide gets you from a pile of parts to a working homelab. Do the steps in order. Do not skip ahead.</p>
+<blockquote>
+<p><strong>Status: not yet proven on real hardware.</strong> The scripts and docs have passed <strong>offline and local functional tests</strong>. <strong>Physical hardware verification is still pending.</strong> If a step fails, stop. Do not work around it. Write down what you saw. See <a href="VALIDATION.html">validation status</a>.</p>
+</blockquote>
+<p><img alt="Rack, switch, desktop and laptop cable map" src="assets/cabling-final.svg" /></p>
+<p>The picture shows the <strong>planned</strong> cabling. Your IP addresses and switch port numbers will differ.</p>
+<h2 id="what-you-will-build">What you will build</h2>
+<table>
+<thead>
+<tr>
+<th>Machine</th>
+<th>Job</th>
+<th>Web page it gets</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>HP</strong></td>
+<td>Always-on storage. Model library and Steam drive.</td>
+<td><code>http://HP-IP:8088/</code></td>
+</tr>
+<tr>
+<td><strong>Dell</strong></td>
+<td>Development workbench. Projects, jobs, search, Docker.</td>
+<td><code>http://DELL-IP:8090/</code></td>
+</tr>
+<tr>
+<td><strong>Desktop</strong></td>
+<td>Games and AI work.</td>
+<td>Windows control app</td>
+</tr>
+<tr>
+<td><strong>Laptop</strong></td>
+<td>Everyday PC. Runs AI models from the HP library.</td>
+<td>Windows control app</td>
+</tr>
+</tbody>
+</table>
+<p>Each server has its own login token. The installer prints it for you.</p>
+<h2 id="the-plan-in-six-parts">The plan in six parts</h2>
+<ol>
+<li><strong>Part 1.</strong> Buy parts, make the USB, fit drives and cables.</li>
+<li><strong>Part 2.</strong> Install Ubuntu on the HP and the Dell.</li>
+<li><strong>Part 3.</strong> Set up the HP.</li>
+<li><strong>Part 4.</strong> Set up the Dell.</li>
+<li><strong>Part 5.</strong> Set up the Windows PCs.</li>
+<li><strong>Part 6.</strong> Set up the Steam drive. Then check everything.</li>
+</ol>
+<p>You need: the parts, one 64 GB USB stick, a monitor and keyboard for the servers, and a Windows PC with internet.</p>
+<hr />
+<h2 id="part-1-parts-usb-and-cables">Part 1. Parts, USB and cables</h2>
+<p>Use the existing steps in the <a href="INSTALL.html">detailed install guide</a>. They cover the physical work and the operating system.</p>
+<h3 id="1-get-the-parts-and-check-cable-distances">1. Get the parts and check cable distances</h3>
+<p>Follow <a href="INSTALL.html#1-get-the-parts-and-check-the-distances">INSTALL.md step 1</a>. Do not buy anything beyond the published range of your cables and modules.</p>
+<h3 id="2-make-the-ubuntu-usb">2. Make the Ubuntu USB</h3>
+<p>Follow <a href="INSTALL.html#2-make-the-ubuntu-installer-usb">INSTALL.md step 2</a>. Download these <strong>two files by hand</strong>:</p>
+<table>
+<thead>
+<tr>
+<th>File</th>
+<th>Version</th>
+<th>Source</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>ubuntu-24.04.5-live-server-amd64.iso</code></td>
+<td>Ubuntu Server 24.04.5 LTS amd64</td>
+<td><a href="https://releases.ubuntu.com/24.04/ubuntu-24.04.5-live-server-amd64.iso">Ubuntu release file</a></td>
+</tr>
+<tr>
+<td><code>rufus-4.15p.exe</code></td>
+<td>Rufus 4.15 Portable</td>
+<td><a href="https://rufus.ie/downloads/">Rufus official downloads</a></td>
+</tr>
+</tbody>
+</table>
+<p>Check the ISO before you write it. The expected SHA256 hash is <code>97f3d7ffb032c3eb3b23d2c8be9cc76e60c2c1f2c0146ba5ba9fe01cafae0fd8</code>. The exact command is in INSTALL.md step 2.</p>
+<h3 id="3-fit-the-drives-and-cables">3. Fit the drives and cables</h3>
+<p>Follow <a href="INSTALL.html#3-fit-the-drives-and-cables">INSTALL.md step 3</a>. <strong>Making a RAID0 drive erases the disks you choose.</strong> Check first that nothing you need is on them.</p>
+<p><img alt="Initial HP and Dell drive layouts" src="assets/drives.svg" /></p>
+<p>Your photographed network card is a six-port ImageStream. It is <strong>not</strong> the assumed 10G card. Set it aside until a live test shows what it can do.</p>
+<p><img alt="Your six-port ImageStream PCIE-ETH-GIGX6 card" src="assets/imagestream-card.jpg" /></p>
+<p><strong>You are done with Part 1 when:</strong> both servers are fitted with drives, cabled to the switch, and powered off.</p>
+<h2 id="part-2-install-ubuntu-on-both-servers">Part 2. Install Ubuntu on both servers</h2>
+<ol>
+<li>Follow <a href="INSTALL.html#4-install-ubuntu-on-both-servers">INSTALL.md step 4</a>. Pick <strong>OpenSSH server</strong> on both machines.</li>
+<li>Follow <a href="INSTALL.html#5-give-the-machines-stable-lan-addresses">INSTALL.md step 5</a>. Give every machine a fixed address. Write the addresses down. You will type them many times.</li>
+<li>Follow <a href="INSTALL.html#6-clone-this-repo-on-each-machine">INSTALL.md step 6</a>. This puts a copy of this repo on each machine.</li>
+</ol>
+<p><strong>Expected on the HP:</strong> <code>findmnt /srv/homelab</code> and <code>findmnt /srv/bulk</code> each show an <code>ext4</code> line.</p>
+<p><strong>You are done with Part 2 when:</strong> you can SSH to both servers, the HP has its two mounts, and the Dell has its four-port network bond (see the <a href="DELL-NETWORK.html">Dell network guide</a>).</p>
+<p>Steps 7, 8 and 9 of the detailed guide link to the same machine pages used below.</p>
+<h2 id="part-3-set-up-the-hp">Part 3. Set up the HP</h2>
+<p>Follow <strong><a href="setup/HP.html">HP setup</a></strong>. In short, on the HP you run:</p>
+<pre><code class="language-bash">sudo bash hp/deploy.sh install HP_IP DELL_IP
+</code></pre>
+<p><strong>Expected at the end:</strong> a line that says <code>Open http://HP_IP:8088/</code>, then a long login token. Save the token somewhere private.</p>
+<h2 id="part-4-set-up-the-dell">Part 4. Set up the Dell</h2>
+<p>Follow <strong><a href="setup/DELL.html">Dell setup</a></strong>. In short, on the Dell you run:</p>
+<pre><code class="language-bash">sudo bash dell/deploy.sh install DELL_IP HP_IP
+</code></pre>
+<p><strong>Expected at the end:</strong> a line that says <code>Open http://DELL_IP:8090/</code>, then a login token. It is a <strong>different</strong> token from the HP.</p>
+<h2 id="part-5-set-up-the-windows-pcs">Part 5. Set up the Windows PCs</h2>
+<p>Follow <strong><a href="setup/WINDOWS.html">Windows setup</a></strong>. It installs the tools on each PC and the Windows control app.</p>
+<h2 id="part-6-set-up-the-steam-drive-then-check-everything">Part 6. Set up the Steam drive, then check everything</h2>
+<ol>
+<li>Follow <a href="INSTALL.html#10-set-up-the-exclusive-steam-drive">INSTALL.md step 10</a>. It is the one-time first-use guide. The <a href="GAME-DRIVE.html">game drive guide</a> explains crashes and recovery.</li>
+<li>Check the whole build with the list below.</li>
+</ol>
+<h3 id="final-checklist">Final checklist</h3>
+<ul>
+<li>[ ] HP and both PCs show a <strong>10 Gb/s</strong> link.</li>
+<li>[ ] <code>http://HP-IP:8088/</code> opens and your HP token signs you in.</li>
+<li>[ ] <code>http://DELL-IP:8090/</code> opens and your Dell token signs you in.</li>
+<li>[ ] The Dell shows four bundled 1 Gb/s network members.</li>
+<li>[ ] The laptop can open <code>\\HP-IP\Models</code>.</li>
+<li>[ ] A small Steam game starts from <code>S:</code> on the desktop. After a release, it starts from <code>S:</code> on the laptop.</li>
+</ul>
+<p>Something wrong? Each setup page has a <strong>If something goes wrong</strong> section.</p>
+<h2 id="now-what">Now what?</h2>
+<p>Read <strong><a href="DAILY-USE.html">Daily use</a></strong>. It shows how to create a project, run a test, search files, download a model, and back up and restore.</p>
+<h2 id="upgrade-later">Upgrade later</h2>
+<p>On each server, from your clone of this repo:</p>
+<pre><code class="language-bash">git pull --ff-only
+sudo bash services/install.sh hp HP_IP DELL_IP     # on the HP
+sudo bash services/install.sh dell DELL_IP HP_IP   # on the Dell
+</code></pre>
+<p>Run only the line for that machine. On Windows, pull the same way, then see <a href="setup/WINDOWS.html">Windows setup</a>.</p><footer>Built from the Markdown guide in Noxy-HNR/homelab-stack. Example screenshots use local test data; the physical server checks happen during setup.</footer></main><script src="assets/guide.js"></script></body></html>

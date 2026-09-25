@@ -2,9 +2,9 @@
 # Run after installing Ubuntu and configuring the four-port copper bond.
 set -Eeuo pipefail
 
-usage() { echo 'Usage: sudo bash dell/deploy.sh plan|install|verify DELL_BOND_IP'; }
-[[ $# -eq 2 ]] || { usage; exit 2; }
-action=$1 dell_ip=$2
+usage() { echo 'Usage: sudo bash dell/deploy.sh plan|install|verify DELL_BOND_IP HP_IP'; }
+[[ $# -eq 3 ]] || { usage; exit 2; }
+action=$1 dell_ip=$2 hp_ip=$3
 [[ $action == plan || $action == install || $action == verify ]] || { usage; exit 2; }
 script_dir=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)
 
@@ -34,7 +34,7 @@ case $action in
   install)
     [[ $EUID -eq 0 ]] || { echo 'Run install with sudo.' >&2; exit 2; }
     check_bond
-    bash "$script_dir/ubuntu-server.sh" install-all "$dell_ip"
+    bash "$script_dir/ubuntu-server.sh" install-all "$dell_ip" "$hp_ip"
     ;;
   verify)
     [[ $EUID -eq 0 ]] || { echo 'Run verify with sudo.' >&2; exit 2; }
