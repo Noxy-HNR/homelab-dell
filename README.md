@@ -1,6 +1,6 @@
-# Homelab deployment
+# Homelab deployment: Dell development server
 
-Deployment source for a home network with an **HP NAS**, a **Dell development server**, a **Windows desktop**, a **Windows laptop**, a **Cisco 3850 switch**, and a shared **Steam game drive**. There is a separate private download repository for each machine. They contain the same release snapshot so the guide and shared scripts work from any clone.
+This public repository is the deployment snapshot for the **Dell development server**. It is part of a five-repository homelab guide; the repositories share the same release snapshot, installation steps, and scripts. Use the setup link below for this host.
 
 - The **HP** stays on. It holds your AI model library and the game drive.
 - The **Dell** is your development workbench. It runs Python projects, jobs, file search, Docker and MCP tools when it is on.
@@ -18,14 +18,14 @@ After cloning, open **[the illustrated guide](docs/guide.html)** in a browser. I
 
 ### Clone the repository for your machine
 
-| Machine | Private repository | First setup page |
+| Machine | Repository | First setup page |
 | --- | --- | --- |
 | HP | [homelab-hp](https://github.com/Noxy-HNR/homelab-hp) | [HP setup](docs/setup/HP.md) |
 | Dell | [homelab-dell](https://github.com/Noxy-HNR/homelab-dell) | [Dell setup](docs/setup/DELL.md) |
 | Desktop | [homelab-desktop](https://github.com/Noxy-HNR/homelab-desktop) | [Windows setup](docs/setup/WINDOWS.md) |
 | Laptop | [homelab-laptop](https://github.com/Noxy-HNR/homelab-laptop) | [Windows setup](docs/setup/WINDOWS.md) |
 
-On the machine, run `gh repo clone Noxy-HNR/homelab-hp homelab-stack`, replacing `homelab-hp` with its row. GitHub CLI will ask you to sign in to the account that can read these private repositories. The local folder is always `homelab-stack`, so commands in the guide stay the same. [Full clone instructions](docs/INSTALL.md#6-clone-this-repo-on-each-machine) cover GitHub CLI installation.
+Clone the public repository listed in the table above into a directory named `homelab-stack`. [Full clone instructions](docs/INSTALL.md#6-clone-this-repo-on-each-machine) cover GitHub CLI setup.
 
 ## After it is installed
 
